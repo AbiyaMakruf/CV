@@ -286,93 +286,115 @@ export function masterToResumeDocument(
   };
 }
 
+let seedPromise: Promise<void> | null = null;
+
+async function ensureDatabaseSeeded(): Promise<void> {
+  if (!seedPromise) {
+    seedPromise = (async () => {
+      try {
+        await prisma.masterProfile.upsert({
+          where: { id: "default" },
+          update: {},
+          create: {
+            id: "default",
+            personalInfo: JSON.stringify(INITIAL_MASTER_PROFILE.personalInfo),
+            experiences: JSON.stringify(INITIAL_MASTER_PROFILE.experiences),
+            education: JSON.stringify(INITIAL_MASTER_PROFILE.education),
+            certifications: JSON.stringify(
+              INITIAL_MASTER_PROFILE.certifications
+            ),
+            projects: JSON.stringify(INITIAL_MASTER_PROFILE.projects),
+            skills: JSON.stringify(INITIAL_MASTER_PROFILE.skills),
+            publications: JSON.stringify(INITIAL_MASTER_PROFILE.publications),
+            awards: JSON.stringify(INITIAL_MASTER_PROFILE.awards),
+            volunteer: JSON.stringify(INITIAL_MASTER_PROFILE.volunteer),
+          },
+        });
+
+        const existingResumes = await prisma.tailoredResume.count();
+        if (existingResumes === 0) {
+          const initialDoc = masterToResumeDocument(INITIAL_MASTER_PROFILE);
+          const initialAts: AtsAnalysisResult = {
+            overallScore: 91,
+            keywordMatchScore: 90,
+            impactMetricsScore: 94,
+            atsFormattingScore: 98,
+            extractedTargetRole: "Senior Full-Stack & AI Engineer",
+            matchedKeywords: [
+              "TypeScript",
+              "Next.js",
+              "React",
+              "Node.js",
+              "Google Gemini API",
+              "PostgreSQL",
+              "Docker",
+              "CI/CD",
+              "Microservices",
+            ],
+            missingCriticalKeywords: ["Kubernetes", "GraphQL"],
+            recommendedTechStack: [
+              "TypeScript",
+              "Next.js",
+              "PostgreSQL",
+              "Docker",
+            ],
+            weakBullets: [],
+            redFlags: [],
+            actionableTips: [
+              "Strong quantified metrics detected across work experience bullet points (68%, 135ms, $4.2M).",
+              "Consider adding Kubernetes or GraphQL to your Skills section if you have hands-on familiarity required by enterprise JDs.",
+            ],
+            analyzedAt: new Date().toISOString(),
+          };
+
+          const seededResume = await prisma.tailoredResume.create({
+            data: {
+              title: "Senior Full-Stack & AI Engineer — Master Baseline",
+              collection: "Full-Stack & AI",
+              targetRole: "Senior Full-Stack & AI Engineer",
+              targetCompany: "Global Tech Co.",
+              jobUrl: "https://linkedin.com/jobs",
+              jobDescription:
+                "Looking for a Senior Full-Stack & AI Engineer experienced in TypeScript, Next.js, React, Node.js, PostgreSQL, Docker, and LLM / Google Gemini API integrations. Must demonstrate measurable impact in latency reduction and scalable system design.",
+              templateId: "harvard",
+              fontFamily: "Calibri",
+              fontSize: "medium",
+              pageLimit: 1,
+              cvData: JSON.stringify(initialDoc),
+              atsAnalysis: JSON.stringify(initialAts),
+              coverLetter: `Dear Hiring Manager at Global Tech Co.,\n\nI am writing to express my strong interest in the Senior Full-Stack & AI Engineer position. Over the past 4+ years building distributed web applications and LLM-powered workflows at Nusantara Cloud Technologies and Garuda FinTech Digital, I have consistently delivered measurable engineering outcomes—including architecting a Google Gemini document pipeline that reduced manual effort by 68% and optimizing PostgreSQL/Redis layers to cut P95 latency from 480ms to 135ms.\n\nMy deep hands-on expertise in TypeScript, Next.js, Node.js, Python, and production AI systems aligns directly with your engineering roadmap. I would welcome the opportunity to discuss how my background in scalable system architecture can contribute to your team's goals.\n\nSincerely,\nAbiya Makruf`,
+            },
+          });
+
+          await prisma.jobApplication.create({
+            data: {
+              companyName: "Global Tech Co.",
+              roleTitle: "Senior Full-Stack & AI Engineer",
+              jobUrl: "https://linkedin.com/jobs",
+              location: "Jakarta / Remote",
+              status: "INTERVIEW",
+              appliedDate: new Date().toISOString().slice(0, 10),
+              salaryRange: "IDR 28M - 38M / month",
+              notes:
+                "Submitted tailored Harvard ATS resume. Passed HR screening; technical system design round scheduled.",
+              tailoredResumeId: seededResume.id,
+            },
+          });
+        }
+      } catch (err) {
+        seedPromise = null;
+        throw err;
+      }
+    })();
+  }
+  return seedPromise;
+}
+
 export async function getMasterProfile(): Promise<MasterCareerProfile> {
-  let row = await prisma.masterProfile.findUnique({
+  await ensureDatabaseSeeded();
+  const row = await prisma.masterProfile.findUniqueOrThrow({
     where: { id: "default" },
   });
-
-  if (!row) {
-    row = await prisma.masterProfile.create({
-      data: {
-        id: "default",
-        personalInfo: JSON.stringify(INITIAL_MASTER_PROFILE.personalInfo),
-        experiences: JSON.stringify(INITIAL_MASTER_PROFILE.experiences),
-        education: JSON.stringify(INITIAL_MASTER_PROFILE.education),
-        certifications: JSON.stringify(INITIAL_MASTER_PROFILE.certifications),
-        projects: JSON.stringify(INITIAL_MASTER_PROFILE.projects),
-        skills: JSON.stringify(INITIAL_MASTER_PROFILE.skills),
-        publications: JSON.stringify(INITIAL_MASTER_PROFILE.publications),
-        awards: JSON.stringify(INITIAL_MASTER_PROFILE.awards),
-        volunteer: JSON.stringify(INITIAL_MASTER_PROFILE.volunteer),
-      },
-    });
-
-    // Also seed one initial Tailored Resume if none exist
-    const existingResumes = await prisma.tailoredResume.count();
-    if (existingResumes === 0) {
-      const initialDoc = masterToResumeDocument(INITIAL_MASTER_PROFILE);
-      const initialAts: AtsAnalysisResult = {
-        overallScore: 91,
-        keywordMatchScore: 90,
-        impactMetricsScore: 94,
-        atsFormattingScore: 98,
-        extractedTargetRole: "Senior Full-Stack & AI Engineer",
-        matchedKeywords: [
-          "TypeScript",
-          "Next.js",
-          "React",
-          "Node.js",
-          "Google Gemini API",
-          "PostgreSQL",
-          "Docker",
-          "CI/CD",
-          "Microservices",
-        ],
-        missingCriticalKeywords: ["Kubernetes", "GraphQL"],
-        recommendedTechStack: ["TypeScript", "Next.js", "PostgreSQL", "Docker"],
-        weakBullets: [],
-        redFlags: [],
-        actionableTips: [
-          "Strong quantified metrics detected across work experience bullet points (68%, 135ms, $4.2M).",
-          "Consider adding Kubernetes or GraphQL to your Skills section if you have hands-on familiarity required by enterprise JDs.",
-        ],
-        analyzedAt: new Date().toISOString(),
-      };
-
-      const seededResume = await prisma.tailoredResume.create({
-        data: {
-          title: "Senior Full-Stack & AI Engineer — Master Baseline",
-          collection: "Full-Stack & AI",
-          targetRole: "Senior Full-Stack & AI Engineer",
-          targetCompany: "Global Tech Co.",
-          jobUrl: "https://linkedin.com/jobs",
-          jobDescription:
-            "Looking for a Senior Full-Stack & AI Engineer experienced in TypeScript, Next.js, React, Node.js, PostgreSQL, Docker, and LLM / Google Gemini API integrations. Must demonstrate measurable impact in latency reduction and scalable system design.",
-          templateId: "harvard",
-          fontFamily: "Calibri",
-          fontSize: "medium",
-          pageLimit: 1,
-          cvData: JSON.stringify(initialDoc),
-          atsAnalysis: JSON.stringify(initialAts),
-          coverLetter: `Dear Hiring Manager at Global Tech Co.,\n\nI am writing to express my strong interest in the Senior Full-Stack & AI Engineer position. Over the past 4+ years building distributed web applications and LLM-powered workflows at Nusantara Cloud Technologies and Garuda FinTech Digital, I have consistently delivered measurable engineering outcomes—including architecting a Google Gemini document pipeline that reduced manual effort by 68% and optimizing PostgreSQL/Redis layers to cut P95 latency from 480ms to 135ms.\n\nMy deep hands-on expertise in TypeScript, Next.js, Node.js, Python, and production AI systems aligns directly with your engineering roadmap. I would welcome the opportunity to discuss how my background in scalable system architecture can contribute to your team's goals.\n\nSincerely,\nAbiya Makruf`,
-        },
-      });
-
-      await prisma.jobApplication.create({
-        data: {
-          companyName: "Global Tech Co.",
-          roleTitle: "Senior Full-Stack & AI Engineer",
-          jobUrl: "https://linkedin.com/jobs",
-          location: "Jakarta / Remote",
-          status: "INTERVIEW",
-          appliedDate: new Date().toISOString().slice(0, 10),
-          salaryRange: "IDR 28M - 38M / month",
-          notes: "Submitted tailored Harvard ATS resume. Passed HR screening; technical system design round scheduled.",
-          tailoredResumeId: seededResume.id,
-        },
-      });
-    }
-  }
 
   return {
     id: row.id,

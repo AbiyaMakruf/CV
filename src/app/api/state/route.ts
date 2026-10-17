@@ -12,13 +12,12 @@ import {
 
 export async function GET() {
   try {
-    const [masterProfile, tailoredResumes, applications, storedKey] =
-      await Promise.all([
-        getMasterProfile(),
-        listTailoredResumes(),
-        listJobApplications(),
-        getStoredApiKey(),
-      ]);
+    const masterProfile = await getMasterProfile();
+    const [tailoredResumes, applications, storedKey] = await Promise.all([
+      listTailoredResumes(),
+      listJobApplications(),
+      getStoredApiKey(),
+    ]);
 
     return NextResponse.json({
       masterProfile,
