@@ -13,16 +13,22 @@ import {
 } from "@/lib/db";
 
 const FLASH_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-flash-latest",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
 ];
 
 const PRO_MODELS = [
-  "gemini-2.5-pro",
-  "gemini-2.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.0-flash",
+  "gemini-3.8-flash",
+  "gemini-flash-latest",
+  "gemini-3.7-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-pro-preview",
 ];
 
 async function resolveApiKey(customApiKey?: string): Promise<string> {
