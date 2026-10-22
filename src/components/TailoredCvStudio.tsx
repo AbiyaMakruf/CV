@@ -23,6 +23,8 @@ import {
   RefreshCw,
   FolderKanban,
   X,
+  Layout,
+  Maximize2,
 } from "lucide-react";
 import {
   MasterCareerProfile,
@@ -79,6 +81,8 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
   const [leftTab, setLeftTab] = useState<"editor" | "ats" | "coverLetter">(
     "ats"
   );
+  // Responsive mobile tab: toggle between left controls and live A4 preview on small screens
+  const [mobileActivePanel, setMobileActivePanel] = useState<"controls" | "preview">("controls");
 
   // "New Tailored CV from JD" Wizard Modal state
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -94,7 +98,6 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
   const [wizardError, setWizardError] = useState<string | null>(null);
 
   // States for active CV operations
-  const [isSaving, setIsSaving] = useState(false);
   const [isRecalculatingAts, setIsRecalculatingAts] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [copiedCover, setCopiedCover] = useState(false);
@@ -373,19 +376,19 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
   };
 
   const scoreColor = (score: number) => {
-    if (score >= 85) return "text-emerald-400 border-emerald-500/40 bg-emerald-500/10";
-    if (score >= 70) return "text-amber-400 border-amber-500/40 bg-amber-500/10";
-    return "text-rose-400 border-rose-500/40 bg-rose-500/10";
+    if (score >= 85) return "text-emerald-700 border-emerald-300 bg-emerald-50";
+    if (score >= 70) return "text-amber-800 border-amber-300 bg-amber-50";
+    return "text-rose-700 border-rose-300 bg-rose-50";
   };
 
   return (
     <div className="space-y-5">
       {/* Top Collection & CV Selector Bar */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="space-y-2 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
-              <FolderKanban className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
+              <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
               Collections:
             </span>
             {collections.map((col) => (
@@ -393,10 +396,10 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                 key={col}
                 type="button"
                 onClick={() => setSelectedCollection(col)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   selectedCollection === col
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-800/80 text-slate-400 hover:text-slate-200"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200"
                 }`}
               >
                 {col}
@@ -411,19 +414,19 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                 key={r.id}
                 type="button"
                 onClick={() => setSelectedId(r.id)}
-                className={`group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium border transition cursor-pointer ${
+                className={`group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
                   activeResume?.id === r.id
-                    ? "bg-indigo-500/15 border-indigo-500 text-white shadow-sm"
-                    : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "bg-indigo-50 border-indigo-400 text-slate-900 shadow-2xs"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900"
                 }`}
               >
-                <FileCheck2 className="w-3.5 h-3.5 text-indigo-400" />
+                <FileCheck2 className="w-3.5 h-3.5 text-indigo-600" />
                 <span className="truncate max-w-[210px]">{r.title}</span>
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                     (r.atsAnalysis?.overallScore || 0) >= 85
-                      ? "bg-emerald-500/20 text-emerald-300"
-                      : "bg-amber-500/20 text-amber-300"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-amber-50 text-amber-800 border-amber-200"
                   }`}
                 >
                   {r.atsAnalysis?.overallScore || 80}% ATS
@@ -438,7 +441,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
           <button
             type="button"
             onClick={onCreateBlankFromMaster}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Clone Master CV
@@ -447,7 +450,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
           <button
             type="button"
             onClick={() => setIsWizardOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-600/25 transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
           >
             <Wand2 className="w-4 h-4" />
             One-Click Tailor from Job Description
@@ -459,11 +462,11 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
       {activeResume ? (
         <div className="space-y-4">
           {/* Formatting & Export Toolbar */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               {/* Template Selector */}
               <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                <label className="text-[11px] font-bold text-slate-500 uppercase">
                   ATS Template:
                 </label>
                 <select
@@ -473,7 +476,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                       templateId: e.target.value as TemplateId,
                     })
                   }
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-medium focus:border-indigo-500 focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 font-medium focus:border-indigo-600 focus:outline-none shadow-2xs"
                 >
                   <option value="harvard">
                     Harvard / Standard Academic ATS
@@ -485,7 +488,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
               {/* Font Selector */}
               <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                <label className="text-[11px] font-bold text-slate-500 uppercase">
                   Standard Font:
                 </label>
                 <select
@@ -495,7 +498,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                       fontFamily: e.target.value as StandardFontFamily,
                     })
                   }
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-medium focus:border-indigo-500 focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 font-medium focus:border-indigo-600 focus:outline-none shadow-2xs"
                 >
                   <option value="Calibri">Calibri (Sans-Serif)</option>
                   <option value="Arial">Arial (Sans-Serif)</option>
@@ -509,7 +512,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
               {/* Font Size Selector */}
               <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                <label className="text-[11px] font-bold text-slate-500 uppercase">
                   Density:
                 </label>
                 <select
@@ -519,7 +522,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                       fontSize: e.target.value as "small" | "medium" | "large",
                     })
                   }
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-medium focus:border-indigo-500 focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 font-medium focus:border-indigo-600 focus:outline-none shadow-2xs"
                 >
                   <option value="small">Compact (Fits dense 1-page)</option>
                   <option value="medium">Standard (10.2pt)</option>
@@ -536,17 +539,17 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   setTrackedToast(true);
                   setTimeout(() => setTrackedToast(false), 2500);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition cursor-pointer"
               >
                 {trackedToast ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    Added to Tracker!
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Added to Tracker!</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-3.5 h-3.5 text-indigo-400" />
-                    Log to Application Tracker
+                    <Send className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Log to Tracker</span>
                   </>
                 )}
               </button>
@@ -560,7 +563,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     activeResume.fontFamily
                   )
                 }
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 Export Selectable ATS PDF
@@ -571,7 +574,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   type="button"
                   onClick={() => onDeleteResume(activeResume.id)}
                   title="Delete this tailored CV"
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -579,47 +582,79 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
             </div>
           </div>
 
+          {/* Mobile Screen Switcher (visible on < xl screens) */}
+          <div className="xl:hidden flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setMobileActivePanel("controls")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileActivePanel === "controls"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Layout className="w-3.5 h-3.5" />
+              <span>Editor & ATS Analysis</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileActivePanel("preview")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileActivePanel === "preview"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Live ATS A4 Preview</span>
+            </button>
+          </div>
+
           {/* Split Screen Grid: Left Panel (ATS/Editor/Cover Letter) | Right Panel (Live A4 Preview) */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
             {/* LEFT PANEL (5 cols on XL) */}
-            <div className="xl:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden flex flex-col max-h-[860px]">
+            <div
+              className={`xl:col-span-5 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col max-h-[860px] ${
+                mobileActivePanel === "controls" ? "block" : "hidden xl:flex"
+              }`}
+            >
               {/* Left Panel Mode Switcher */}
-              <div className="grid grid-cols-3 border-b border-slate-800 bg-slate-950/60 p-1.5 gap-1">
+              <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/80 p-1.5 gap-1">
                 <button
                   type="button"
                   onClick={() => setLeftTab("ats")}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                     leftTab === "ats"
-                      ? "bg-indigo-600 text-white"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  ATS Score ({activeResume.atsAnalysis?.overallScore || 85}%)
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="truncate">ATS ({activeResume.atsAnalysis?.overallScore || 85}%)</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setLeftTab("editor")}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                     leftTab === "editor"
-                      ? "bg-indigo-600 text-white"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <FileCheck2 className="w-3.5 h-3.5" />
-                  CV Content Editor
+                  <FileCheck2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="truncate">CV Editor</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setLeftTab("coverLetter")}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                     leftTab === "coverLetter"
-                      ? "bg-indigo-600 text-white"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  Cover Letter
+                  <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="truncate">Cover Letter</span>
                 </button>
               </div>
 
@@ -628,7 +663,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                 {leftTab === "ats" && (
                   <div className="space-y-5">
                     {/* Score Card */}
-                    <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-center justify-between gap-4 shadow-2xs">
                       <div className="flex items-center gap-4">
                         <div
                           className={`w-16 h-16 rounded-2xl border-2 flex flex-col items-center justify-center font-extrabold text-xl ${scoreColor(
@@ -638,38 +673,38 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                           <span>
                             {activeResume.atsAnalysis?.overallScore || 80}%
                           </span>
-                          <span className="text-[9px] font-semibold uppercase">
+                          <span className="text-[9px] font-bold uppercase tracking-wider">
                             ATS Match
                           </span>
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-white">
+                          <h3 className="text-sm font-bold text-slate-900">
                             {activeResume.title}
                           </h3>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-500">
                             Collection: {activeResume.collection} •{" "}
                             {activeResume.targetCompany || "General Target"}
                           </p>
                           <div className="flex flex-wrap gap-3 mt-2 text-[11px]">
-                            <span className="text-slate-300">
+                            <span className="text-slate-600">
                               Keywords:{" "}
-                              <strong className="text-indigo-400">
+                              <strong className="text-indigo-600 font-bold">
                                 {activeResume.atsAnalysis?.keywordMatchScore ||
                                   85}
                                 %
                               </strong>
                             </span>
-                            <span className="text-slate-300">
+                            <span className="text-slate-600">
                               Metrics Impact:{" "}
-                              <strong className="text-emerald-400">
+                              <strong className="text-emerald-600 font-bold">
                                 {activeResume.atsAnalysis?.impactMetricsScore ||
                                   88}
                                 %
                               </strong>
                             </span>
-                            <span className="text-slate-300">
+                            <span className="text-slate-600">
                               Parser Format:{" "}
-                              <strong className="text-emerald-400">
+                              <strong className="text-emerald-600 font-bold">
                                 {activeResume.atsAnalysis?.atsFormattingScore ||
                                   98}
                                 %
@@ -684,7 +719,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                         onClick={handleRecomputeAts}
                         disabled={isRecalculatingAts}
                         title="Re-analyze CV against Job Description"
-                        className="p-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 cursor-pointer"
+                        className="p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition cursor-pointer"
                       >
                         <RefreshCw
                           className={`w-4 h-4 ${
@@ -697,14 +732,14 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     {/* Target Job Description Box */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-slate-300">
+                        <label className="text-xs font-semibold text-slate-700">
                           Target Job Description (JD)
                         </label>
                         <button
                           type="button"
                           onClick={handleRecomputeAts}
                           disabled={isRecalculatingAts}
-                          className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer"
+                          className="text-[11px] text-indigo-600 hover:text-indigo-700 font-semibold cursor-pointer"
                         >
                           {isRecalculatingAts
                             ? "Analyzing..."
@@ -720,14 +755,14 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                           })
                         }
                         placeholder="Paste target Job Description here to check keyword match rate..."
-                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                       />
                     </div>
 
                     {/* Matched Keywords */}
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Matched JD Keywords (
                         {activeResume.atsAnalysis?.matchedKeywords?.length || 0}
                         )
@@ -739,14 +774,14 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                             (kw, i) => (
                               <span
                                 key={i}
-                                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700"
                               >
                                 ✓ {kw}
                               </span>
                             )
                           )
                         ) : (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-slate-400">
                             No specific keywords matched yet.
                           </span>
                         )}
@@ -755,8 +790,8 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
                     {/* Missing Critical Keywords (1-click Add to Skills) */}
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                         Missing Keywords — Click to Add to Skills (
                         {activeResume.atsAnalysis?.missingCriticalKeywords
                           ?.length || 0}
@@ -776,7 +811,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                                   handleAddMissingKeywordToSkills(kw)
                                 }
                                 title="Click to add this keyword to your CV Skills section"
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 transition cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 transition cursor-pointer"
                               >
                                 <Plus className="w-3 h-3" />
                                 <span>{kw}</span>
@@ -784,8 +819,8 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                             )
                           )
                         ) : (
-                          <span className="text-xs text-emerald-400">
-                            All critical JD keywords are covered!
+                          <span className="text-xs text-emerald-700 font-semibold">
+                            ✓ All critical JD keywords are covered!
                           </span>
                         )}
                       </div>
@@ -795,8 +830,8 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     {activeResume.atsAnalysis?.weakBullets &&
                       activeResume.atsAnalysis.weakBullets.length > 0 && (
                         <div className="space-y-2.5">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                             Measurable Impact Checker ({
                               activeResume.atsAnalysis.weakBullets.length
                             }{" "}
@@ -806,16 +841,16 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                             (wb, idx) => (
                               <div
                                 key={idx}
-                                className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2"
+                                className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 shadow-2xs"
                               >
-                                <div className="text-[11px] font-semibold text-amber-400">
+                                <div className="text-[11px] font-bold text-amber-800">
                                   {wb.section} — {wb.reason}
                                 </div>
-                                <div className="text-xs text-slate-400 line-through">
+                                <div className="text-xs text-slate-500 line-through">
                                   &ldquo;{wb.originalBullet}&rdquo;
                                 </div>
-                                <div className="text-xs text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 p-2 rounded-lg">
-                                  <strong>XYZ Suggestion:</strong>{" "}
+                                <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg leading-relaxed">
+                                  <strong className="text-emerald-900">XYZ Suggestion:</strong>{" "}
                                   {wb.suggestedRewrite}
                                 </div>
                                 <button
@@ -826,7 +861,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                                       wb.suggestedRewrite
                                     )
                                   }
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
                                 >
                                   <Check className="w-3 h-3" /> Apply XYZ Rewrite
                                 </button>
@@ -838,13 +873,13 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
                     {/* Red Flags & Actionable Tips */}
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         ATS Diagnostics & Recommendations
                       </h4>
                       {activeResume.atsAnalysis?.redFlags?.map((rf, i) => (
                         <div
                           key={i}
-                          className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300"
+                          className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium"
                         >
                           ⚠️ {rf}
                         </div>
@@ -853,7 +888,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                         (tip, i) => (
                           <div
                             key={i}
-                            className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300"
+                            className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed"
                           >
                             💡 {tip}
                           </div>
@@ -866,9 +901,9 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                 {leftTab === "editor" && (
                   <div className="space-y-5">
                     {/* Metadata */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
                           CV Version Title
                         </label>
                         <input
@@ -879,11 +914,11 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                               title: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
                           Collection Category
                         </label>
                         <input
@@ -894,14 +929,14 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                               collection: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                         />
                       </div>
                     </div>
 
                     {/* Section Ordering & Visibility Control */}
-                    <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Section Order & Visibility
                       </h4>
                       <div className="space-y-1">
@@ -915,13 +950,13 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                           return (
                             <div
                               key={secKey}
-                              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800/80 text-xs"
+                              className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs"
                             >
                               <span
                                 className={
                                   isVis
-                                    ? "text-slate-200 font-medium"
-                                    : "text-slate-500 line-through"
+                                    ? "text-slate-800 font-semibold"
+                                    : "text-slate-400 line-through"
                                 }
                               >
                                 {SECTION_LABELS[secKey]}
@@ -931,14 +966,14 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                                   type="button"
                                   onClick={() => moveSection(secKey, -1)}
                                   disabled={idx === 0}
-                                  className="p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
                                 >
                                   <ArrowUp className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => moveSection(secKey, 1)}
-                                  className="p-1 text-slate-400 hover:text-white"
+                                  className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
                                 >
                                   <ArrowDown className="w-3.5 h-3.5" />
                                 </button>
@@ -947,12 +982,12 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                                   onClick={() =>
                                     toggleSectionVisibility(secKey)
                                   }
-                                  className="p-1 text-slate-400 hover:text-indigo-400"
+                                  className="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
                                 >
                                   {isVis ? (
-                                    <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                                    <Eye className="w-3.5 h-3.5 text-emerald-600" />
                                   ) : (
-                                    <EyeOff className="w-3.5 h-3.5 text-slate-500" />
+                                    <EyeOff className="w-3.5 h-3.5 text-slate-400" />
                                   )}
                                 </button>
                               </div>
@@ -965,7 +1000,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     {/* Tailored Headline & Summary */}
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
                           Tailored Headline
                         </label>
                         <input
@@ -982,12 +1017,12 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                               },
                             })
                           }
-                          className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
                           Tailored Professional Summary
                         </label>
                         <textarea
@@ -1004,7 +1039,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                               },
                             })
                           }
-                          className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                         />
                         <InlineAiHelper
                           currentText={activeResume.cvData.personalInfo.summary}
@@ -1028,15 +1063,15 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
                     {/* Tailored Experience Bullets */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Tailored Experience Bullets
                       </h4>
                       {activeResume.cvData.experiences.map((exp, expIdx) => (
                         <div
                           key={exp.id}
-                          className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2"
+                          className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 shadow-2xs"
                         >
-                          <div className="text-xs font-bold text-white">
+                          <div className="text-xs font-bold text-slate-900">
                             {exp.role} @ {exp.company}
                           </div>
                           {exp.bullets.map((b, bIdx) => (
@@ -1061,7 +1096,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                                     },
                                   });
                                 }}
-                                className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-800 text-xs text-slate-200"
+                                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none"
                               />
                               <InlineAiHelper
                                 currentText={b}
@@ -1096,12 +1131,12 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
                 {leftTab === "coverLetter" && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div>
-                        <h3 className="text-sm font-bold text-white">
+                        <h3 className="text-sm font-bold text-slate-900">
                           AI Tailored Cover Letter
                         </h3>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-500">
                           Matched to {activeResume.targetCompany || "Company"} •{" "}
                           {activeResume.targetRole || "Target Role"}
                         </p>
@@ -1110,7 +1145,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                         type="button"
                         onClick={handleGenerateCoverLetter}
                         disabled={isGeneratingCover}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer"
                       >
                         {isGeneratingCover ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1134,7 +1169,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                         })
                       }
                       placeholder="Click 'Generate Cover Letter' to auto-draft a tailored cover letter from your active CV and target Job Description..."
-                      className="w-full p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 leading-relaxed focus:border-indigo-500 focus:outline-none"
+                      className="w-full p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 leading-relaxed focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                     />
 
                     <div className="flex justify-end gap-2">
@@ -1147,17 +1182,17 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                           setCopiedCover(true);
                           setTimeout(() => setCopiedCover(false), 2000);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs cursor-pointer"
                       >
                         {copiedCover ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            Copied!
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Copied to Clipboard!</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-3.5 h-3.5" />
-                            Copy Cover Letter
+                            <span>Copy Cover Letter</span>
                           </>
                         )}
                       </button>
@@ -1168,17 +1203,21 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
             </div>
 
             {/* RIGHT PANEL: Live Real-Time A4 Single-Column ATS Preview (7 cols on XL) */}
-            <div className="xl:col-span-7 bg-slate-900/60 border border-slate-800 rounded-2xl p-4 md:p-6 overflow-x-auto flex flex-col items-center">
+            <div
+              className={`xl:col-span-7 bg-slate-100/70 border border-slate-200 rounded-2xl p-4 md:p-6 overflow-x-auto flex flex-col items-center shadow-xs ${
+                mobileActivePanel === "preview" ? "block" : "hidden xl:flex"
+              }`}
+            >
               <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-slate-400">
+                <span className="text-xs font-semibold text-slate-600">
                   Live ATS Print Preview (Single-Column • Selectable Vector Text)
                 </span>
-                <span className="text-[11px] text-emerald-400 font-medium">
-                  ✓ Zero Tables • ✓ Standard Fonts • ✓ 100% ATS Parseable
+                <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  ✓ Standard Fonts • ✓ 100% ATS Parseable
                 </span>
               </div>
 
-              <div className="origin-top scale-[0.78] sm:scale-[0.88] md:scale-100 transition-transform">
+              <div className="origin-top scale-[0.72] sm:scale-[0.85] md:scale-[0.95] xl:scale-100 transition-transform shadow-md rounded border border-slate-200">
                 <AtsResumePreview
                   data={activeResume.cvData}
                   templateId={activeResume.templateId}
@@ -1195,18 +1234,18 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
       {/* One-Click Tailoring from Job Description Modal */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
                   <Wand2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">
+                  <h2 className="text-base font-bold text-slate-900">
                     One-Click CV Tailoring & Vacancy Matcher
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Gemini analyzes the JD, selects relevant Master Profile
                     items, rewrites bullets in XYZ format, and translates ID → EN
                   </p>
@@ -1214,7 +1253,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
               </div>
               <button
                 onClick={() => setIsWizardOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1223,7 +1262,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
             <div className="p-6 overflow-y-auto space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Target Role (Optional)
                   </label>
                   <input
@@ -1231,11 +1270,11 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     value={wizardRole}
                     onChange={(e) => setWizardRole(e.target.value)}
                     placeholder="e.g. Senior Frontend Engineer"
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Target Company (Optional)
                   </label>
                   <input
@@ -1243,11 +1282,11 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     value={wizardCompany}
                     onChange={(e) => setWizardCompany(e.target.value)}
                     placeholder="e.g. GoTo / Traveloka / Stripe"
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     CV Collection Tag
                   </label>
                   <input
@@ -1255,14 +1294,14 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     value={wizardCollection}
                     onChange={(e) => setWizardCollection(e.target.value)}
                     placeholder="e.g. Frontend Engineer, ML Researcher"
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                   />
                 </div>
               </div>
 
               {/* Job URL Fetcher */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Job Posting URL (Optional — Auto-extracts JD text)
                 </label>
                 <div className="flex gap-2">
@@ -1271,18 +1310,18 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     value={wizardUrl}
                     onChange={(e) => setWizardUrl(e.target.value)}
                     placeholder="https://..."
-                    className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                    className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                   />
                   <button
                     type="button"
                     onClick={handleFetchJdFromUrl}
                     disabled={!wizardUrl.trim() || isFetchingUrl}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 disabled:opacity-40 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs disabled:opacity-40 cursor-pointer"
                   >
                     {isFetchingUrl ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
                     ) : (
-                      <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                      <Globe className="w-3.5 h-3.5 text-indigo-600" />
                     )}
                     Fetch URL
                   </button>
@@ -1291,7 +1330,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
 
               {/* Raw Job Description */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Job Description (Paste raw JD in English or Bahasa Indonesia)
                 </label>
                 <textarea
@@ -1299,13 +1338,13 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   value={wizardJd}
                   onChange={(e) => setWizardJd(e.target.value)}
                   placeholder="Paste the full Job Description requirements, responsibilities, and qualifications here..."
-                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     ATS Template Style
                   </label>
                   <select
@@ -1313,7 +1352,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                     onChange={(e) =>
                       setWizardTemplate(e.target.value as TemplateId)
                     }
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                   >
                     <option value="harvard">
                       Harvard / Standard Academic ATS
@@ -1323,19 +1362,19 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   </select>
                 </div>
 
-                <label className="inline-flex items-center gap-2 text-xs text-slate-200 mt-4 cursor-pointer">
+                <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 mt-4 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={wizardGenCoverLetter}
                     onChange={(e) => setWizardGenCoverLetter(e.target.checked)}
-                    className="accent-indigo-500"
+                    className="accent-indigo-600 rounded"
                   />
                   Also auto-draft a matching tailored Cover Letter
                 </label>
               </div>
 
               {wizardError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
                   {wizardError}
                 </div>
               )}
@@ -1344,7 +1383,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsWizardOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1352,7 +1391,7 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   type="button"
                   disabled={isTailoring}
                   onClick={handleRunTailorWizard}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-600/25 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
                 >
                   {isTailoring ? (
                     <>

@@ -83,6 +83,17 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
     }
   };
 
+  const dedupeMerge = <T extends { id?: string }>(
+    existing: T[],
+    incoming: T[],
+    keyFn: (item: T) => string
+  ): T[] => {
+    if (mergeStrategy === "replace") return incoming;
+    const existingKeys = new Set(existing.map(keyFn));
+    const newItems = incoming.filter((item) => !existingKeys.has(keyFn(item)));
+    return [...existing, ...newItems];
+  };
+
   const handleConfirmImport = async () => {
     if (!extracted) return;
     setIsSaving(true);
@@ -125,20 +136,6 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   currentMaster.personalInfo.summary,
               };
       }
-
-      // Deduplicating merge helper
-      const dedupeMerge = <T,>(
-        existing: T[],
-        incoming: T[],
-        keyFn: (item: T) => string
-      ): T[] => {
-        if (mergeStrategy === "replace") return incoming;
-        const seen = new Set(existing.map((i) => keyFn(i).toLowerCase()));
-        const additions = incoming.filter(
-          (item) => !seen.has(keyFn(item).toLowerCase())
-        );
-        return [...existing, ...additions];
-      };
 
       if (importExperiences) {
         nextProfile.experiences = dedupeMerge(
@@ -246,19 +243,19 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-slate-900">
                 Legacy CV Extraction & Smart Ingestion
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Upload PDF, DOCX, or Image — Gemini AI extracts, translates (ID
                 → EN), and structures your data
               </p>
@@ -266,7 +263,7 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -276,12 +273,12 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {!extracted ? (
             <>
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-indigo-500/60 rounded-xl p-8 cursor-pointer bg-slate-950/40 transition">
-                <FileText className="w-10 h-10 text-indigo-400 mb-3" />
-                <span className="text-sm font-medium text-slate-200">
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-8 cursor-pointer bg-slate-50/50 hover:bg-slate-50 transition">
+                <FileText className="w-10 h-10 text-indigo-600 mb-3" />
+                <span className="text-sm font-semibold text-slate-800">
                   {file ? file.name : "Click to select your existing CV file"}
                 </span>
-                <span className="text-xs text-slate-400 mt-1">
+                <span className="text-xs text-slate-500 mt-1">
                   Supports PDF (.pdf), Word (.docx), Image (.png, .jpg), or Text
                   (.txt) — Bahasa Indonesia or English
                 </span>
@@ -298,17 +295,17 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
               </label>
 
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -316,7 +313,7 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   type="button"
                   disabled={!file || isParsing}
                   onClick={handleUploadAndParse}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white shadow-lg shadow-indigo-600/25 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white shadow-xs transition cursor-pointer"
                 >
                   {isParsing ? (
                     <>
@@ -334,14 +331,14 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
             </>
           ) : (
             <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   <div>
-                    <h4 className="text-xs font-semibold text-emerald-200">
+                    <h4 className="text-xs font-bold text-emerald-900">
                       Extraction Complete — Review Before Merging
                     </h4>
-                    <p className="text-[11px] text-emerald-300/80">
+                    <p className="text-[11px] text-emerald-700">
                       Choose which extracted sections to merge into your Master
                       Career Profile.
                     </p>
@@ -350,28 +347,28 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setExtracted(null)}
-                  className="text-xs text-slate-300 hover:text-white underline"
+                  className="text-xs text-slate-600 hover:text-slate-900 underline font-medium cursor-pointer"
                 >
                   Upload Different File
                 </button>
               </div>
 
               {/* Merge Strategy Toggle */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setMergeStrategy("merge")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
                     mergeStrategy === "merge"
-                      ? "bg-indigo-500/15 border-indigo-500 text-white"
-                      : "bg-slate-950/40 border-slate-800 text-slate-400"
+                      ? "bg-indigo-50/70 border-indigo-600 text-slate-900 shadow-2xs"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <GitMerge className="w-4 h-4 text-indigo-400" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <GitMerge className="w-4 h-4 text-indigo-600" />
                     Smart Merge (Avoid Duplicates)
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1">
                     Keeps your existing entries and appends new non-duplicate
                     items.
                   </p>
@@ -380,17 +377,17 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setMergeStrategy("replace")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
                     mergeStrategy === "replace"
-                      ? "bg-amber-500/15 border-amber-500 text-white"
-                      : "bg-slate-950/40 border-slate-800 text-slate-400"
+                      ? "bg-amber-50/70 border-amber-600 text-slate-900 shadow-2xs"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <RefreshCw className="w-4 h-4 text-amber-400" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <RefreshCw className="w-4 h-4 text-amber-600" />
                     Overwrite Selected Sections
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1">
                     Replaces checked sections in your Master Profile with
                     extracted data.
                   </p>
@@ -398,19 +395,19 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
               </div>
 
               {/* Section Checkboxes & Preview Counts */}
-              <div className="space-y-2.5 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+              <div className="space-y-2.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importPersonalInfo}
                     onChange={(e) => setImportPersonalInfo(e.target.checked)}
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Personal Info & Summary:{" "}
                     </span>
-                    <span className="text-slate-300">
+                    <span className="text-slate-600">
                       {extracted.personalInfo.fullName} —{" "}
                       {extracted.personalInfo.headline} (
                       {extracted.personalInfo.email})
@@ -418,18 +415,18 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importExperiences}
                     onChange={(e) => setImportExperiences(e.target.checked)}
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Work Experiences ({extracted.experiences.length} found):{" "}
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-slate-600">
                       {extracted.experiences
                         .map((e) => `${e.role} @ ${e.company}`)
                         .join(" • ") || "None"}
@@ -437,36 +434,36 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importProjects}
                     onChange={(e) => setImportProjects(e.target.checked)}
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Projects ({extracted.projects.length} found):{" "}
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-slate-600">
                       {extracted.projects.map((p) => p.title).join(" • ") ||
                         "None"}
                     </span>
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importEducation}
                     onChange={(e) => setImportEducation(e.target.checked)}
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Education ({extracted.education.length} found):{" "}
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-slate-600">
                       {extracted.education
                         .map((e) => `${e.degree} - ${e.institution}`)
                         .join(" • ") || "None"}
@@ -474,18 +471,18 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importSkills}
                     onChange={(e) => setImportSkills(e.target.checked)}
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Skills ({extracted.skills.length} categories):{" "}
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-slate-600">
                       {extracted.skills
                         .map((s) => `${s.category} (${s.items.length})`)
                         .join(" • ") || "None"}
@@ -493,31 +490,31 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importCertifications}
                     onChange={(e) =>
                       setImportCertifications(e.target.checked)
                     }
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Certifications ({extracted.certifications.length} found)
                     </span>
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-900/60 cursor-pointer">
+                <label className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={importExtras}
                     onChange={(e) => setImportExtras(e.target.checked)}
-                    className="mt-1 accent-indigo-500"
+                    className="mt-1 accent-indigo-600 rounded"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-slate-900">
                       Publications ({extracted.publications?.length || 0}),
                       Awards ({extracted.awards?.length || 0}), Volunteer (
                       {extracted.volunteer?.length || 0})
@@ -530,7 +527,7 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -538,7 +535,7 @@ export const LegacyCvImportModal: React.FC<LegacyCvImportModalProps> = ({
                   type="button"
                   disabled={isSaving}
                   onClick={handleConfirmImport}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer"
                 >
                   {isSaving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
