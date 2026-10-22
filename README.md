@@ -85,8 +85,8 @@ Aplikasi web *full-stack* dan *self-hosted* modern untuk mengelola **Master Care
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/AbiyaMakruf/CV.git
-cd CV
+git clone https://github.com/AbiyaMakruf/Personal-AIPoweredATSBuilder.git
+cd Personal-AIPoweredATSBuilder
 npm install
 ```
 
@@ -136,7 +136,7 @@ Jika Anda menyewa VPS KVM di Hostinger atau IDCloudHost, Anda dapat menginstal *
 curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
 ```
 **Keuntungan Coolify**:
-- Terhubung langsung ke repositori GitHub `https://github.com/AbiyaMakruf/CV.git`. Setiap kali Anda melakukan `git push`, aplikasi otomatis ter-build dan ter-deploy.
+- Terhubung langsung ke repositori GitHub `https://github.com/AbiyaMakruf/Personal-AIPoweredATSBuilder.git`. Setiap kali Anda melakukan `git push`, aplikasi otomatis ter-build dan ter-deploy.
 - Menggunakan *Persistent Volume* di VPS sehingga database SQLite lokal Anda tidak akan pernah hilang.
 - Mengelola domain, sertifikat SSL HTTPS gratis (Let's Encrypt), dan reverse proxy secara otomatis.
 
