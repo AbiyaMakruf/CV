@@ -17,6 +17,7 @@ import {
   Check,
   Loader2,
   Languages,
+  ChevronDown,
 } from "lucide-react";
 import { MasterCareerProfile } from "@/types/resume";
 import { InlineAiHelper } from "@/components/InlineAiHelper";
@@ -47,10 +48,85 @@ export const MasterProfileEditor: React.FC<MasterProfileEditorProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
 
+  // Accordion expansion states
+  const [expandedExperiences, setExpandedExperiences] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    if (profile.experiences && profile.experiences.length > 0) {
+      initial[profile.experiences[0].id] = true;
+    }
+    return initial;
+  });
+
+  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    if (profile.projects && profile.projects.length > 0) {
+      initial[profile.projects[0].id] = true;
+    }
+    return initial;
+  });
+
   // Sync when external profile updates (e.g. after Legacy CV import)
   React.useEffect(() => {
     setDraft(profile);
+    setExpandedExperiences((prev) => {
+      if (Object.keys(prev).length === 0 && profile.experiences && profile.experiences.length > 0) {
+        return { [profile.experiences[0].id]: true };
+      }
+      return prev;
+    });
+    setExpandedProjects((prev) => {
+      if (Object.keys(prev).length === 0 && profile.projects && profile.projects.length > 0) {
+        return { [profile.projects[0].id]: true };
+      }
+      return prev;
+    });
   }, [profile]);
+
+  const toggleExperience = (id: string) => {
+    setExpandedExperiences((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const expandAllExperiences = () => {
+    const all: Record<string, boolean> = {};
+    draft.experiences.forEach((exp) => {
+      all[exp.id] = true;
+    });
+    setExpandedExperiences(all);
+  };
+
+  const collapseAllExperiences = () => {
+    const all: Record<string, boolean> = {};
+    draft.experiences.forEach((exp) => {
+      all[exp.id] = false;
+    });
+    setExpandedExperiences(all);
+  };
+
+  const toggleProject = (id: string) => {
+    setExpandedProjects((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const expandAllProjects = () => {
+    const all: Record<string, boolean> = {};
+    draft.projects.forEach((proj) => {
+      all[proj.id] = true;
+    });
+    setExpandedProjects(all);
+  };
+
+  const collapseAllProjects = () => {
+    const all: Record<string, boolean> = {};
+    draft.projects.forEach((proj) => {
+      all[proj.id] = false;
+    });
+    setExpandedProjects(all);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -382,506 +458,796 @@ export const MasterProfileEditor: React.FC<MasterProfileEditorProps> = ({
 
       {activeTab === "experience" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Work Experience ({draft.experiences.length})
-            </h3>
-            <button
-              type="button"
-              onClick={() =>
-                setDraft({
-                  ...draft,
-                  experiences: [
-                    {
-                      id: `exp-${Date.now()}`,
-                      company: "New Company",
-                      role: "Software Engineer",
-                      employmentType: "Full-time",
-                      location: "Jakarta, Indonesia",
-                      startDate: "Jan 2025",
-                      endDate: "Present",
-                      current: true,
-                      bullets: [
-                        "Membangun sistem backend mikroservis yang meningkatkan kecepatan pemrosesan data sebesar 40%.",
-                      ],
-                      technologies: ["TypeScript", "Node.js"],
-                    },
-                    ...draft.experiences,
-                  ],
-                })
-              }
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Add Work Experience
-            </button>
-          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Work Experience ({draft.experiences.length})
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Click any role to expand or collapse details.
+              </p>
+            </div>
 
-          {draft.experiences.map((exp, expIdx) => (
-            <div
-              key={exp.id}
-              className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-2xs"
-            >
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    {exp.role || "Role"} @ {exp.company || "Company"}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {exp.startDate} – {exp.current ? "Present" : exp.endDate} •{" "}
-                    {exp.location}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft({
-                      ...draft,
-                      experiences: draft.experiences.filter(
-                        (_, i) => i !== expIdx
-                      ),
-                    })
-                  }
-                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Company Name
-                  </label>
-                  <input
-                    type="text"
-                    value={exp.company}
-                    onChange={(e) => {
-                      const next = [...draft.experiences];
-                      next[expIdx] = { ...exp, company: e.target.value };
-                      setDraft({ ...draft, experiences: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Role / Job Title
-                  </label>
-                  <input
-                    type="text"
-                    value={exp.role}
-                    onChange={(e) => {
-                      const next = [...draft.experiences];
-                      next[expIdx] = { ...exp, role: e.target.value };
-                      setDraft({ ...draft, experiences: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={exp.location}
-                    onChange={(e) => {
-                      const next = [...draft.experiences];
-                      next[expIdx] = { ...exp, location: e.target.value };
-                      setDraft({ ...draft, experiences: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="text"
-                    value={exp.startDate}
-                    onChange={(e) => {
-                      const next = [...draft.experiences];
-                      next[expIdx] = { ...exp, startDate: e.target.value };
-                      setDraft({ ...draft, experiences: next });
-                    }}
-                    placeholder="e.g. Jan 2024"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="text"
-                    value={exp.endDate}
-                    disabled={exp.current}
-                    onChange={(e) => {
-                      const next = [...draft.experiences];
-                      next[expIdx] = { ...exp, endDate: e.target.value };
-                      setDraft({ ...draft, experiences: next });
-                    }}
-                    placeholder="e.g. Dec 2025 or Present"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs disabled:bg-slate-100 disabled:text-slate-400"
-                  />
-                </div>
-                <div className="flex items-end pb-1.5">
-                  <label className="inline-flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={exp.current}
-                      onChange={(e) => {
-                        const next = [...draft.experiences];
-                        next[expIdx] = {
-                          ...exp,
-                          current: e.target.checked,
-                          endDate: e.target.checked ? "Present" : exp.endDate,
-                        };
-                        setDraft({ ...draft, experiences: next });
-                      }}
-                      className="accent-indigo-600 rounded"
-                    />
-                    Currently working here
-                  </label>
-                </div>
-              </div>
-
-              {/* Bullet Points with Inline AI */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-800">
-                    Impact Bullet Points (Input in Indonesian or English)
-                  </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {draft.experiences.length > 0 && (
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => {
-                      const next = [...draft.experiences];
-                      next[expIdx] = {
-                        ...exp,
-                        bullets: [...exp.bullets, ""],
-                      };
-                      setDraft({ ...draft, experiences: next });
-                    }}
-                    className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                    onClick={expandAllExperiences}
+                    className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add Bullet
+                    Expand All
+                  </button>
+                  <span className="h-3.5 w-px bg-slate-200 my-auto" />
+                  <button
+                    type="button"
+                    onClick={collapseAllExperiences}
+                    className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition cursor-pointer"
+                  >
+                    Collapse All
                   </button>
                 </div>
+              )}
 
-                {exp.bullets.map((bullet, bIdx) => (
-                  <div
-                    key={bIdx}
-                    className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs text-slate-400 mt-2">•</span>
-                      <textarea
-                        rows={2}
-                        value={bullet}
+              <button
+                type="button"
+                onClick={() => {
+                  const newExpId = `exp-${Date.now()}`;
+                  setDraft({
+                    ...draft,
+                    experiences: [
+                      {
+                        id: newExpId,
+                        company: "New Company",
+                        role: "Software Engineer",
+                        employmentType: "Full-time",
+                        location: "Jakarta, Indonesia",
+                        startDate: "Jan 2025",
+                        endDate: "Present",
+                        current: true,
+                        bullets: [
+                          "Membangun sistem backend mikroservis yang meningkatkan kecepatan pemrosesan data sebesar 40%.",
+                        ],
+                        technologies: ["TypeScript", "Node.js"],
+                      },
+                      ...draft.experiences,
+                    ],
+                  });
+                  setExpandedExperiences((prev) => ({ ...prev, [newExpId]: true }));
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Add Work Experience
+              </button>
+            </div>
+          </div>
+
+          {draft.experiences.map((exp, expIdx) => {
+            const isExpanded = !!expandedExperiences[exp.id];
+            const bulletCount = exp.bullets.filter((b) => b && b.trim().length > 0).length;
+
+            return (
+              <div
+                key={exp.id}
+                className={`rounded-2xl transition-all duration-200 shadow-2xs overflow-hidden ${
+                  isExpanded
+                    ? "border border-indigo-200 bg-white ring-1 ring-indigo-50/50"
+                    : "border border-slate-200 bg-white hover:border-slate-300"
+                }`}
+              >
+                {/* Clickable Accordion Header Bar */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleExperience(exp.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleExperience(exp.id);
+                    }
+                  }}
+                  aria-expanded={isExpanded}
+                  className={`w-full text-left p-3.5 sm:p-4.5 flex items-start sm:items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
+                    isExpanded
+                      ? "bg-indigo-50/40 border-b border-indigo-100"
+                      : "hover:bg-slate-50/80"
+                  }`}
+                >
+                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                    <div
+                      className={`p-1.5 rounded-lg border transition-transform duration-200 mt-0.5 sm:mt-0 shrink-0 ${
+                        isExpanded
+                          ? "bg-indigo-600 border-indigo-600 text-white rotate-180"
+                          : "bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-sm font-bold text-slate-900 truncate">
+                          {exp.role || "Untitled Role"}
+                        </span>
+                        <span className="text-xs text-slate-400 font-normal">at</span>
+                        <span className="text-xs font-semibold text-slate-700 truncate">
+                          {exp.company || "Company Name"}
+                        </span>
+                        {exp.current && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Current
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-xs text-slate-500">
+                        {(exp.startDate || exp.endDate) && (
+                          <span>
+                            {exp.startDate || "Start"} – {exp.current ? "Present" : exp.endDate || "End"}
+                          </span>
+                        )}
+                        {exp.location && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="truncate max-w-[200px]">{exp.location}</span>
+                          </>
+                        )}
+                        <span className="text-slate-300">•</span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-medium">
+                          {bulletCount} bullet{bulletCount === 1 ? "" : "s"}
+                        </span>
+                        {exp.technologies && exp.technologies.length > 0 && (
+                          <>
+                            <span className="hidden sm:inline text-slate-300">•</span>
+                            <div className="hidden sm:inline-flex items-center gap-1">
+                              {exp.technologies.slice(0, 3).map((tech, tIdx) => (
+                                <span
+                                  key={tIdx}
+                                  className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 text-[10px]"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                              {exp.technologies.length > 3 && (
+                                <span className="text-[10px] text-slate-400">
+                                  +{exp.technologies.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0 self-start sm:self-center">
+                    <button
+                      type="button"
+                      title="Delete Experience"
+                      aria-label="Delete experience"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDraft({
+                          ...draft,
+                          experiences: draft.experiences.filter((_, i) => i !== expIdx),
+                        });
+                      }}
+                      className="text-slate-400 hover:text-rose-600 p-2 rounded-xl hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded Editing Body */}
+                {isExpanded && (
+                  <div className="p-4 sm:p-5 space-y-4 bg-white animate-in fade-in-50 duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Company Name
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.company}
+                          onChange={(e) => {
+                            const next = [...draft.experiences];
+                            next[expIdx] = { ...exp, company: e.target.value };
+                            setDraft({ ...draft, experiences: next });
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Role / Job Title
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.role}
+                          onChange={(e) => {
+                            const next = [...draft.experiences];
+                            next[expIdx] = { ...exp, role: e.target.value };
+                            setDraft({ ...draft, experiences: next });
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.location}
+                          onChange={(e) => {
+                            const next = [...draft.experiences];
+                            next[expIdx] = { ...exp, location: e.target.value };
+                            setDraft({ ...draft, experiences: next });
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.startDate}
+                          onChange={(e) => {
+                            const next = [...draft.experiences];
+                            next[expIdx] = { ...exp, startDate: e.target.value };
+                            setDraft({ ...draft, experiences: next });
+                          }}
+                          placeholder="e.g. Jan 2024"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="text"
+                          value={exp.endDate}
+                          disabled={exp.current}
+                          onChange={(e) => {
+                            const next = [...draft.experiences];
+                            next[expIdx] = { ...exp, endDate: e.target.value };
+                            setDraft({ ...draft, experiences: next });
+                          }}
+                          placeholder="e.g. Dec 2025 or Present"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </div>
+                      <div className="flex items-end pb-1.5">
+                        <label className="inline-flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={exp.current}
+                            onChange={(e) => {
+                              const next = [...draft.experiences];
+                              next[expIdx] = {
+                                ...exp,
+                                current: e.target.checked,
+                                endDate: e.target.checked ? "Present" : exp.endDate,
+                              };
+                              setDraft({ ...draft, experiences: next });
+                            }}
+                            className="accent-indigo-600 rounded"
+                          />
+                          Currently working here
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Bullet Points with Inline AI */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-slate-800">
+                          Impact Bullet Points (Input in Indonesian or English)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = [...draft.experiences];
+                            next[expIdx] = {
+                              ...exp,
+                              bullets: [...exp.bullets, ""],
+                            };
+                            setDraft({ ...draft, experiences: next });
+                          }}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Bullet
+                        </button>
+                      </div>
+
+                      {exp.bullets.map((bullet, bIdx) => (
+                        <div
+                          key={bIdx}
+                          className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 shadow-2xs"
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="text-xs text-slate-400 mt-2">•</span>
+                            <textarea
+                              rows={2}
+                              value={bullet}
+                              onChange={(e) => {
+                                const next = [...draft.experiences];
+                                const nextBullets = [...exp.bullets];
+                                nextBullets[bIdx] = e.target.value;
+                                next[expIdx] = { ...exp, bullets: nextBullets };
+                                setDraft({ ...draft, experiences: next });
+                              }}
+                              placeholder="e.g. Meningkatkan performa API hingga 45% dengan optimasi query PostgreSQL dan caching Redis..."
+                              className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...draft.experiences];
+                                next[expIdx] = {
+                                  ...exp,
+                                  bullets: exp.bullets.filter((_, i) => i !== bIdx),
+                                };
+                                setDraft({ ...draft, experiences: next });
+                              }}
+                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-slate-100 transition cursor-pointer mt-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="pl-4">
+                            <InlineAiHelper
+                              currentText={bullet}
+                              contextRole={exp.role}
+                              apiKey={apiKey}
+                              onApply={(improved) => {
+                                const next = [...draft.experiences];
+                                const nextBullets = [...exp.bullets];
+                                nextBullets[bIdx] = improved;
+                                next[expIdx] = { ...exp, bullets: nextBullets };
+                                setDraft({ ...draft, experiences: next });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Technologies Used */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Technologies Used (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={exp.technologies.join(", ")}
                         onChange={(e) => {
-                          const next = [...draft.experiences];
-                          const nextBullets = [...exp.bullets];
-                          nextBullets[bIdx] = e.target.value;
-                          next[expIdx] = { ...exp, bullets: nextBullets };
-                          setDraft({ ...draft, experiences: next });
-                        }}
-                        placeholder="e.g. Meningkatkan performa API hingga 45% dengan optimasi query PostgreSQL dan caching Redis..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
                           const next = [...draft.experiences];
                           next[expIdx] = {
                             ...exp,
-                            bullets: exp.bullets.filter((_, i) => i !== bIdx),
+                            technologies: e.target.value
+                              .split(",")
+                              .map((t) => t.trim())
+                              .filter(Boolean),
                           };
                           setDraft({ ...draft, experiences: next });
                         }}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-slate-100 transition cursor-pointer mt-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="pl-4">
-                      <InlineAiHelper
-                        currentText={bullet}
-                        contextRole={exp.role}
-                        apiKey={apiKey}
-                        onApply={(improved) => {
-                          const next = [...draft.experiences];
-                          const nextBullets = [...exp.bullets];
-                          nextBullets[bIdx] = improved;
-                          next[expIdx] = { ...exp, bullets: nextBullets };
-                          setDraft({ ...draft, experiences: next });
-                        }}
+                        placeholder="TypeScript, Next.js, Go, PostgreSQL, Docker"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
                       />
                     </div>
                   </div>
-                ))}
+                )}
               </div>
-
-              {/* Technologies Used */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Technologies Used (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={exp.technologies.join(", ")}
-                  onChange={(e) => {
-                    const next = [...draft.experiences];
-                    next[expIdx] = {
-                      ...exp,
-                      technologies: e.target.value
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean),
-                    };
-                    setDraft({ ...draft, experiences: next });
-                  }}
-                  placeholder="TypeScript, Next.js, Go, PostgreSQL, Docker"
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {activeTab === "projects" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Projects Portfolio ({draft.projects.length})
-            </h3>
-            <button
-              type="button"
-              onClick={() =>
-                setDraft({
-                  ...draft,
-                  projects: [
-                    {
-                      id: `proj-${Date.now()}`,
-                      title: "New Technical Project",
-                      role: "Lead Developer",
-                      startDate: "2026",
-                      endDate: "2026",
-                      description:
-                        "High-impact full-stack or AI application solving a real-world engineering problem.",
-                      bullets: [
-                        "Designed and deployed scalable architecture handling 1,000+ concurrent requests.",
-                      ],
-                      techStack: ["Next.js", "TypeScript", "Gemini API"],
-                      metrics: "99.9% uptime",
-                      liveUrl: "",
-                      repoUrl: "",
-                    },
-                    ...draft.projects,
-                  ],
-                })
-              }
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Add Project
-            </button>
-          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Projects Portfolio ({draft.projects.length})
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Click any project to expand or collapse details.
+              </p>
+            </div>
 
-          {draft.projects.map((proj, pIdx) => (
-            <div
-              key={proj.id}
-              className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-2xs"
-            >
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                <h4 className="text-sm font-bold text-slate-900">{proj.title}</h4>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft({
-                      ...draft,
-                      projects: draft.projects.filter((_, i) => i !== pIdx),
-                    })
-                  }
-                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Project Title
-                  </label>
-                  <input
-                    type="text"
-                    value={proj.title}
-                    onChange={(e) => {
-                      const next = [...draft.projects];
-                      next[pIdx] = { ...proj, title: e.target.value };
-                      setDraft({ ...draft, projects: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Role
-                  </label>
-                  <input
-                    type="text"
-                    value={proj.role || ""}
-                    onChange={(e) => {
-                      const next = [...draft.projects];
-                      next[pIdx] = { ...proj, role: e.target.value };
-                      setDraft({ ...draft, projects: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Key Metrics / Quantified Impact
-                  </label>
-                  <input
-                    type="text"
-                    value={proj.metrics || ""}
-                    onChange={(e) => {
-                      const next = [...draft.projects];
-                      next[pIdx] = { ...proj, metrics: e.target.value };
-                      setDraft({ ...draft, projects: next });
-                    }}
-                    placeholder="e.g. 94% accuracy, 2,500+ active users"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Tech Stack (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={proj.techStack.join(", ")}
-                    onChange={(e) => {
-                      const next = [...draft.projects];
-                      next[pIdx] = {
-                        ...proj,
-                        techStack: e.target.value
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      };
-                      setDraft({ ...draft, projects: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Project Link / GitHub URL
-                  </label>
-                  <input
-                    type="text"
-                    value={proj.liveUrl || ""}
-                    onChange={(e) => {
-                      const next = [...draft.projects];
-                      next[pIdx] = { ...proj, liveUrl: e.target.value };
-                      setDraft({ ...draft, projects: next });
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Short Description
-                </label>
-                <input
-                  type="text"
-                  value={proj.description}
-                  onChange={(e) => {
-                    const next = [...draft.projects];
-                    next[pIdx] = { ...proj, description: e.target.value };
-                    setDraft({ ...draft, projects: next });
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-800">
-                    Project Highlights / Bullets
-                  </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {draft.projects.length > 0 && (
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => {
-                      const next = [...draft.projects];
-                      next[pIdx] = {
-                        ...proj,
-                        bullets: [...proj.bullets, ""],
-                      };
-                      setDraft({ ...draft, projects: next });
-                    }}
-                    className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                    onClick={expandAllProjects}
+                    className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add Bullet
+                    Expand All
+                  </button>
+                  <span className="h-3.5 w-px bg-slate-200 my-auto" />
+                  <button
+                    type="button"
+                    onClick={collapseAllProjects}
+                    className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition cursor-pointer"
+                  >
+                    Collapse All
                   </button>
                 </div>
-                {proj.bullets.map((b, bIdx) => (
-                  <div
-                    key={bIdx}
-                    className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs"
-                  >
-                    <div className="flex items-start gap-2">
-                      <textarea
-                        rows={2}
-                        value={b}
-                        onChange={(e) => {
-                          const next = [...draft.projects];
-                          const nextBullets = [...proj.bullets];
-                          nextBullets[bIdx] = e.target.value;
-                          next[pIdx] = { ...proj, bullets: nextBullets };
-                          setDraft({ ...draft, projects: next });
-                        }}
-                        className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = [...draft.projects];
-                          next[pIdx] = {
-                            ...proj,
-                            bullets: proj.bullets.filter((_, i) => i !== bIdx),
-                          };
-                          setDraft({ ...draft, projects: next });
-                        }}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-slate-100 transition cursor-pointer mt-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  const newProjId = `proj-${Date.now()}`;
+                  setDraft({
+                    ...draft,
+                    projects: [
+                      {
+                        id: newProjId,
+                        title: "New Technical Project",
+                        role: "Lead Developer",
+                        startDate: "2026",
+                        endDate: "2026",
+                        description:
+                          "High-impact full-stack or AI application solving a real-world engineering problem.",
+                        bullets: [
+                          "Designed and deployed scalable architecture handling 1,000+ concurrent requests.",
+                        ],
+                        techStack: ["Next.js", "TypeScript", "Gemini API"],
+                        metrics: "99.9% uptime",
+                        liveUrl: "",
+                        repoUrl: "",
+                      },
+                      ...draft.projects,
+                    ],
+                  });
+                  setExpandedProjects((prev) => ({ ...prev, [newProjId]: true }));
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Add Project
+              </button>
+            </div>
+          </div>
+
+          {draft.projects.map((proj, pIdx) => {
+            const isExpanded = !!expandedProjects[proj.id];
+            const bulletCount = proj.bullets.filter((b) => b && b.trim().length > 0).length;
+
+            return (
+              <div
+                key={proj.id}
+                className={`rounded-2xl transition-all duration-200 shadow-2xs overflow-hidden ${
+                  isExpanded
+                    ? "border border-indigo-200 bg-white ring-1 ring-indigo-50/50"
+                    : "border border-slate-200 bg-white hover:border-slate-300"
+                }`}
+              >
+                {/* Clickable Accordion Header Bar */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleProject(proj.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleProject(proj.id);
+                    }
+                  }}
+                  aria-expanded={isExpanded}
+                  className={`w-full text-left p-3.5 sm:p-4.5 flex items-start sm:items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
+                    isExpanded
+                      ? "bg-indigo-50/40 border-b border-indigo-100"
+                      : "hover:bg-slate-50/80"
+                  }`}
+                >
+                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                    <div
+                      className={`p-1.5 rounded-lg border transition-transform duration-200 mt-0.5 sm:mt-0 shrink-0 ${
+                        isExpanded
+                          ? "bg-indigo-600 border-indigo-600 text-white rotate-180"
+                          : "bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <ChevronDown className="w-4 h-4" />
                     </div>
-                    <div className="pl-4">
-                      <InlineAiHelper
-                        currentText={b}
-                        contextRole={proj.title}
-                        apiKey={apiKey}
-                        onApply={(improved) => {
-                          const next = [...draft.projects];
-                          const nextBullets = [...proj.bullets];
-                          nextBullets[bIdx] = improved;
-                          next[pIdx] = { ...proj, bullets: nextBullets };
-                          setDraft({ ...draft, projects: next });
-                        }}
-                      />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-sm font-bold text-slate-900 truncate">
+                          {proj.title || "Untitled Project"}
+                        </span>
+                        {proj.role && (
+                          <>
+                            <span className="text-xs text-slate-400 font-normal">as</span>
+                            <span className="text-xs font-semibold text-slate-700 truncate">
+                              {proj.role}
+                            </span>
+                          </>
+                        )}
+                        {proj.metrics && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 truncate max-w-[220px]">
+                            ⚡ {proj.metrics}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-xs text-slate-500">
+                        {(proj.startDate || proj.endDate) && (
+                          <span>
+                            {proj.startDate || ""}
+                            {proj.startDate && proj.endDate ? " – " : ""}
+                            {proj.endDate || ""}
+                          </span>
+                        )}
+                        {(proj.startDate || proj.endDate) && <span className="text-slate-300">•</span>}
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-medium">
+                          {bulletCount} highlight{bulletCount === 1 ? "" : "s"}
+                        </span>
+                        {proj.techStack && proj.techStack.length > 0 && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <div className="inline-flex flex-wrap items-center gap-1">
+                              {proj.techStack.slice(0, 3).map((tech, tIdx) => (
+                                <span
+                                  key={tIdx}
+                                  className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[10px] font-medium"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                              {proj.techStack.length > 3 && (
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  +{proj.techStack.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))}
+
+                  <div className="flex items-center gap-1 shrink-0 self-start sm:self-center">
+                    <button
+                      type="button"
+                      title="Delete Project"
+                      aria-label="Delete project"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDraft({
+                          ...draft,
+                          projects: draft.projects.filter((_, i) => i !== pIdx),
+                        });
+                      }}
+                      className="text-slate-400 hover:text-rose-600 p-2 rounded-xl hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded Editing Body */}
+                {isExpanded && (
+                  <div className="p-4 sm:p-5 space-y-4 bg-white animate-in fade-in-50 duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Project Title
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.title}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = { ...proj, title: e.target.value };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Role
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.role || ""}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = { ...proj, role: e.target.value };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          placeholder="e.g. Lead Developer, Full-Stack Engineer"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Key Metrics / Quantified Impact
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.metrics || ""}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = { ...proj, metrics: e.target.value };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          placeholder="e.g. 94% accuracy, 2,500+ active users"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Start Date / Year
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.startDate || ""}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = { ...proj, startDate: e.target.value };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          placeholder="e.g. Jan 2025 or 2025"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          End Date / Year
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.endDate || ""}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = { ...proj, endDate: e.target.value };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          placeholder="e.g. Present or 2026"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Project Link / GitHub URL
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.liveUrl || ""}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = { ...proj, liveUrl: e.target.value };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          placeholder="https://github.com/... or https://..."
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Tech Stack (comma-separated)
+                        </label>
+                        <input
+                          type="text"
+                          value={proj.techStack.join(", ")}
+                          onChange={(e) => {
+                            const next = [...draft.projects];
+                            next[pIdx] = {
+                              ...proj,
+                              techStack: e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          placeholder="React, TypeScript, Node.js, Tailwind CSS"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Short Description
+                      </label>
+                      <input
+                        type="text"
+                        value={proj.description}
+                        onChange={(e) => {
+                          const next = [...draft.projects];
+                          next[pIdx] = { ...proj, description: e.target.value };
+                          setDraft({ ...draft, projects: next });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-slate-800">
+                          Project Highlights / Bullets
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = [...draft.projects];
+                            next[pIdx] = {
+                              ...proj,
+                              bullets: [...proj.bullets, ""],
+                            };
+                            setDraft({ ...draft, projects: next });
+                          }}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Bullet
+                        </button>
+                      </div>
+                      {proj.bullets.map((b, bIdx) => (
+                        <div
+                          key={bIdx}
+                          className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 shadow-2xs"
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="text-xs text-slate-400 mt-2">•</span>
+                            <textarea
+                              rows={2}
+                              value={b}
+                              onChange={(e) => {
+                                const next = [...draft.projects];
+                                const nextBullets = [...proj.bullets];
+                                nextBullets[bIdx] = e.target.value;
+                                next[pIdx] = { ...proj, bullets: nextBullets };
+                                setDraft({ ...draft, projects: next });
+                              }}
+                              className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...draft.projects];
+                                next[pIdx] = {
+                                  ...proj,
+                                  bullets: proj.bullets.filter((_, i) => i !== bIdx),
+                                };
+                                setDraft({ ...draft, projects: next });
+                              }}
+                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-slate-100 transition cursor-pointer mt-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="pl-4">
+                            <InlineAiHelper
+                              currentText={b}
+                              contextRole={proj.title}
+                              apiKey={apiKey}
+                              onApply={(improved) => {
+                                const next = [...draft.projects];
+                                const nextBullets = [...proj.bullets];
+                                nextBullets[bIdx] = improved;
+                                next[pIdx] = { ...proj, bullets: nextBullets };
+                                setDraft({ ...draft, projects: next });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
