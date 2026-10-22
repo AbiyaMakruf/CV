@@ -25,10 +25,14 @@ import {
   X,
   Layout,
   Maximize2,
+  Scissors,
+  MessageSquareCode,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   MasterCareerProfile,
   ResumeSectionKey,
+  SpacingDensity,
   StandardFontFamily,
   TailoredResumeRecord,
   TemplateId,
@@ -38,6 +42,9 @@ import {
   exportResumeToPdf,
 } from "@/components/AtsResumePreview";
 import { InlineAiHelper } from "@/components/InlineAiHelper";
+import { AutoTrimModal } from "@/components/AutoTrimModal";
+import { MockInterviewModal } from "@/components/MockInterviewModal";
+import { ToneSentimentModal } from "@/components/ToneSentimentModal";
 import { DEFAULT_SECTION_ORDER, DEFAULT_VISIBLE_SECTIONS } from "@/lib/db";
 
 interface TailoredCvStudioProps {
@@ -102,6 +109,12 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [copiedCover, setCopiedCover] = useState(false);
   const [trackedToast, setTrackedToast] = useState(false);
+
+  // States for 3 high-impact features
+  const [livePageCount, setLivePageCount] = useState<number>(1);
+  const [isAutoTrimOpen, setIsAutoTrimOpen] = useState(false);
+  const [isMockInterviewOpen, setIsMockInterviewOpen] = useState(false);
+  const [isToneSentimentOpen, setIsToneSentimentOpen] = useState(false);
 
   const activeResume =
     resumes.find((r) => r.id === selectedId) || resumes[0] || null;
@@ -532,6 +545,56 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              {/* Feature 1: Pangkas ke 2 Halaman */}
+              <button
+                type="button"
+                onClick={() => setIsAutoTrimOpen(true)}
+                title="Pangkas konten atau kompres spasi agar pas tepat 2 halaman"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border shadow-2xs transition cursor-pointer ${
+                  livePageCount > 2.0
+                    ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-300 animate-pulse"
+                    : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
+                }`}
+              >
+                <Scissors
+                  className={`w-3.5 h-3.5 ${
+                    livePageCount > 2.0 ? "text-rose-600" : "text-amber-600"
+                  }`}
+                />
+                <span>Pangkas ke 2 Halaman</span>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                    livePageCount > 2.0
+                      ? "bg-rose-200 text-rose-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {livePageCount} hal
+                </span>
+              </button>
+
+              {/* Feature 2: Latihan Wawancara AI */}
+              <button
+                type="button"
+                onClick={() => setIsMockInterviewOpen(true)}
+                title="Latihan wawancara AI berbasis CV dan JD dengan evaluasi STAR"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition cursor-pointer"
+              >
+                <MessageSquareCode className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Latihan Wawancara AI</span>
+              </button>
+
+              {/* Feature 3: Analisis Sentimen & Tone */}
+              <button
+                type="button"
+                onClick={() => setIsToneSentimentOpen(true)}
+                title="Deteksi kata klise dan ubah tone persona CV (Executive / Technical / Product)"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition cursor-pointer"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-purple-600" />
+                <span>Analisis Sentimen & Tone</span>
+              </button>
+
               <button
                 type="button"
                 onClick={async () => {
@@ -560,7 +623,8 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   exportResumeToPdf(
                     "ats-resume-sheet",
                     `${activeResume.cvData.personalInfo.fullName} - ${activeResume.title}`,
-                    activeResume.fontFamily
+                    activeResume.fontFamily,
+                    activeResume.cvData.spacingDensity || "normal"
                   )
                 }
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer"
@@ -1208,13 +1272,48 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                 mobileActivePanel === "preview" ? "block" : "hidden xl:flex"
               }`}
             >
-              <div className="w-full flex items-center justify-between mb-3 px-2">
-                <span className="text-xs font-semibold text-slate-600">
-                  Live ATS Print Preview (Single-Column • Selectable Vector Text)
-                </span>
-                <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  ✓ Standard Fonts • ✓ 100% ATS Parseable
-                </span>
+              <div className="w-full flex flex-wrap items-center justify-between gap-2 mb-3 px-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-600">
+                    Live ATS Print Preview
+                  </span>
+                  {/* Live Page Count Tracker Pill */}
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition ${
+                      livePageCount > 2.0
+                        ? "bg-rose-50 text-rose-700 border-rose-300 animate-pulse"
+                        : "bg-emerald-50 text-emerald-700 border-emerald-300"
+                    }`}
+                  >
+                    {livePageCount > 2.0 ? (
+                      <>
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                        <span>{livePageCount} Halaman (Tumpah ke Hal 3!)</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{livePageCount} Halaman (Aman 2 Hal ATS ✓)</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {livePageCount > 2.0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAutoTrimOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs transition cursor-pointer"
+                    >
+                      <Scissors className="w-3.5 h-3.5" />
+                      <span>Pangkas ke 2 Halaman</span>
+                    </button>
+                  )}
+                  <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    ✓ Standard Fonts • ✓ 100% ATS Parseable
+                  </span>
+                </div>
               </div>
 
               <div className="origin-top scale-[0.72] sm:scale-[0.85] md:scale-[0.95] xl:scale-100 transition-transform shadow-md rounded border border-slate-200">
@@ -1224,6 +1323,8 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
                   fontFamily={activeResume.fontFamily}
                   fontSize={activeResume.fontSize}
                   pageLimit={activeResume.pageLimit}
+                  spacingDensity={activeResume.cvData.spacingDensity || "normal"}
+                  onPageCountChange={(count) => setLivePageCount(count)}
                   sheetId="ats-resume-sheet"
                 />
               </div>
@@ -1409,6 +1510,61 @@ export const TailoredCvStudio: React.FC<TailoredCvStudioProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Auto-Trim to 2 Pages Modal */}
+      {isAutoTrimOpen && activeResume && (
+        <AutoTrimModal
+          isOpen={isAutoTrimOpen}
+          onClose={() => setIsAutoTrimOpen(false)}
+          activeResume={activeResume}
+          estimatedPages={livePageCount}
+          apiKey={apiKey}
+          onApplyTrim={async (updatedCvData, appliedDensity) => {
+            await onUpdateResume(activeResume.id, {
+              cvData: {
+                ...updatedCvData,
+                spacingDensity:
+                  appliedDensity || updatedCvData.spacingDensity || "compact",
+              },
+              pageLimit: 2,
+            });
+          }}
+          onApplyDensityOnly={async (density: SpacingDensity) => {
+            await onUpdateResume(activeResume.id, {
+              cvData: {
+                ...activeResume.cvData,
+                spacingDensity: density,
+              },
+              pageLimit: 2,
+            });
+          }}
+        />
+      )}
+
+      {/* AI Mock Interview Modal */}
+      {isMockInterviewOpen && activeResume && (
+        <MockInterviewModal
+          isOpen={isMockInterviewOpen}
+          onClose={() => setIsMockInterviewOpen(false)}
+          activeResume={activeResume}
+          apiKey={apiKey}
+        />
+      )}
+
+      {/* AI Tone & Sentiment Analyzer Modal */}
+      {isToneSentimentOpen && activeResume && (
+        <ToneSentimentModal
+          isOpen={isToneSentimentOpen}
+          onClose={() => setIsToneSentimentOpen(false)}
+          activeResume={activeResume}
+          apiKey={apiKey}
+          onApplyRestyle={async (updatedCvData) => {
+            await onUpdateResume(activeResume.id, {
+              cvData: updatedCvData,
+            });
+          }}
+        />
       )}
     </div>
   );

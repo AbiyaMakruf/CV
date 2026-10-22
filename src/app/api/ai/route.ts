@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  analyzeCvTone,
   calculateAtsMatch,
+  evaluateInterviewAnswer,
   fetchJobDescriptionFromUrl,
   generateCoverLetter,
+  generateInterviewQuestions,
+  restyleCvTone,
   tailorResumeForJob,
   translateAndPolishContent,
+  trimResumeToTwoPages,
 } from "@/lib/gemini";
 import {
   createTailoredResume,
@@ -122,6 +127,89 @@ export async function POST(req: NextRequest) {
         await updateTailoredResume(body.resumeId, { coverLetter: letter });
       }
       return NextResponse.json({ coverLetter: letter });
+    }
+
+    if (action === "trim-pages") {
+      if (!body.cvData) {
+        return NextResponse.json(
+          { error: "cvData is required for trim-pages." },
+          { status: 400 }
+        );
+      }
+      const trimResult = await trimResumeToTwoPages(body.cvData, customApiKey);
+      if (body.resumeId) {
+        await updateTailoredResume(body.resumeId, {
+          cvData: trimResult.trimmedCvData,
+          pageLimit: 2,
+        });
+      }
+      return NextResponse.json(trimResult);
+    }
+
+    if (action === "interview-questions") {
+      if (!body.cvData) {
+        return NextResponse.json(
+          { error: "cvData is required for interview-questions." },
+          { status: 400 }
+        );
+      }
+      const questions = await generateInterviewQuestions(
+        body.cvData,
+        body.jobDescription,
+        body.targetRole,
+        customApiKey
+      );
+      return NextResponse.json({ questions });
+    }
+
+    if (action === "evaluate-answer") {
+      if (!body.question || !body.candidateAnswer) {
+        return NextResponse.json(
+          { error: "question and candidateAnswer are required." },
+          { status: 400 }
+        );
+      }
+      const evaluation = await evaluateInterviewAnswer(
+        body.question,
+        body.questionCategory || "General",
+        body.candidateAnswer,
+        body.cvData,
+        body.jobDescription,
+        customApiKey
+      );
+      return NextResponse.json({ evaluation });
+    }
+
+    if (action === "analyze-tone") {
+      if (!body.cvData) {
+        return NextResponse.json(
+          { error: "cvData is required for analyze-tone." },
+          { status: 400 }
+        );
+      }
+      const toneAnalysis = await analyzeCvTone(body.cvData, customApiKey);
+      return NextResponse.json({ toneAnalysis });
+    }
+
+    if (action === "restyle-tone") {
+      if (!body.cvData || !body.preset) {
+        return NextResponse.json(
+          { error: "cvData and preset are required for restyle-tone." },
+          { status: 400 }
+        );
+      }
+      const restyleResult = await restyleCvTone(
+        body.cvData,
+        body.preset,
+        body.targetRole,
+        customApiKey
+      );
+      if (body.resumeId) {
+        await updateTailoredResume(body.resumeId, {
+          cvData: restyleResult.restyledCvData,
+        });
+      }
+      return NextResponse.json(restyleResult);
     }
 
     return NextResponse.json({ error: "Unknown AI action" }, { status: 400 });

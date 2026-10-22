@@ -127,6 +127,8 @@ export type StandardFontFamily =
   | "Garamond"
   | "Times New Roman";
 
+export type SpacingDensity = "normal" | "compact" | "ultra-compact";
+
 export interface ResumeDocumentData {
   personalInfo: PersonalInfo;
   experiences: WorkExperience[];
@@ -139,6 +141,7 @@ export interface ResumeDocumentData {
   volunteer: VolunteerItem[];
   sectionOrder: ResumeSectionKey[];
   visibleSections: Record<ResumeSectionKey, boolean>;
+  spacingDensity?: SpacingDensity;
 }
 
 export interface WeakBulletFeedback {
@@ -212,3 +215,81 @@ export interface BackupPayload {
   tailoredResumes: TailoredResumeRecord[];
   applications: JobApplicationRecord[];
 }
+
+// Auto-Trim Types
+export interface TrimPagesResult {
+  trimmedCvData: ResumeDocumentData;
+  summaryOfChanges: string[];
+  bulletsTrimmedCount: number;
+}
+
+// AI Mock Interview Types
+export type InterviewQuestionCategory = "Technical" | "Behavioral STAR" | "Situational";
+
+export interface InterviewQuestion {
+  id: string;
+  category: InterviewQuestionCategory;
+  question: string;
+  contextOrRationale: string;
+  tips: string;
+}
+
+export interface StarAnalysisSection {
+  present: boolean;
+  feedback: string;
+}
+
+export interface InterviewEvaluation {
+  score: number; // 0 - 100
+  starAnalysis: {
+    situation: StarAnalysisSection;
+    task: StarAnalysisSection;
+    action: StarAnalysisSection;
+    result: StarAnalysisSection & { hasMetrics: boolean };
+  };
+  strengths: string[];
+  weaknesses: string[];
+  suggestedIdealAnswer: string;
+  overallVerdict: string;
+}
+
+// Tone & Sentiment Analysis Types
+export type SentimentType = "Action-Driven" | "Confident" | "Objective" | "Passive";
+
+export type TonePreset =
+  | "Executive & Strategic Leader"
+  | "Technical Deep-Dive Specialist"
+  | "Product & Innovation Driver";
+
+export interface ClicheItem {
+  phrase: string;
+  location: string;
+  whyItHurts: string;
+  replacement: string;
+}
+
+export interface ToneAnalysisResult {
+  overallSentiment: SentimentType;
+  confidenceScore: number; // 0 - 100%
+  impactScore: number; // 0 - 100%
+  clarityScore: number; // 0 - 100%
+  sentimentBreakdown: {
+    actionOrientedPercent: number;
+    passiveVoicePercent: number;
+    metricsCoveragePercent: number;
+  };
+  summaryFeedback: string;
+  cliches: ClicheItem[];
+  tonePresetsSummary: {
+    executive: string;
+    technical: string;
+    product: string;
+  };
+}
+
+export interface RestyleToneResult {
+  restyledCvData: ResumeDocumentData;
+  changelog: string[];
+  appliedPreset: TonePreset;
+}
+

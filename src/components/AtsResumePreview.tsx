@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   ResumeDocumentData,
   ResumeSectionKey,
+  SpacingDensity,
   StandardFontFamily,
   TemplateId,
 } from "@/types/resume";
@@ -18,6 +19,8 @@ interface AtsResumePreviewProps {
   highlightKeywords?: string[];
   showKeywordHighlights?: boolean;
   sheetId?: string;
+  spacingDensity?: SpacingDensity;
+  onPageCountChange?: (count: number) => void;
 }
 
 const FONT_STACK_MAP: Record<StandardFontFamily, string> = {
@@ -58,10 +61,56 @@ const FONT_SIZE_CONFIG = {
   },
 };
 
+export const DENSITY_CONFIG: Record<
+  SpacingDensity,
+  {
+    padding: string;
+    lineHeight: string;
+    sectionMarginTop: string;
+    sectionMarginBottom: string;
+    itemMarginBottom: string;
+    listMargin: string;
+    liMarginBottom: string;
+    headerMarginBottom: string;
+  }
+> = {
+  normal: {
+    padding: "13mm 15mm",
+    lineHeight: "1.38",
+    sectionMarginTop: "10px",
+    sectionMarginBottom: "6px",
+    itemMarginBottom: "7px",
+    listMargin: "2px 0 6px 0",
+    liMarginBottom: "2px",
+    headerMarginBottom: "8px",
+  },
+  compact: {
+    padding: "10mm 12mm",
+    lineHeight: "1.28",
+    sectionMarginTop: "7px",
+    sectionMarginBottom: "4px",
+    itemMarginBottom: "4px",
+    listMargin: "1px 0 4px 0",
+    liMarginBottom: "1.2px",
+    headerMarginBottom: "6px",
+  },
+  "ultra-compact": {
+    padding: "7mm 10mm",
+    lineHeight: "1.20",
+    sectionMarginTop: "5px",
+    sectionMarginBottom: "3px",
+    itemMarginBottom: "2.5px",
+    listMargin: "0 0 2px 0",
+    liMarginBottom: "0.5px",
+    headerMarginBottom: "4px",
+  },
+};
+
 export function exportResumeToPdf(
   elementId: string,
   documentTitle: string,
-  fontFamily: StandardFontFamily
+  fontFamily: StandardFontFamily,
+  spacingDensity: SpacingDensity = "normal"
 ) {
   const sourceEl = document.getElementById(elementId);
   if (!sourceEl) {
@@ -79,6 +128,27 @@ export function exportResumeToPdf(
   document.body.appendChild(iframe);
 
   const fontStack = FONT_STACK_MAP[fontFamily] || FONT_STACK_MAP.Calibri;
+  const pageMargin =
+    spacingDensity === "ultra-compact"
+      ? "7mm 10mm"
+      : spacingDensity === "compact"
+      ? "10mm 12mm"
+      : "12mm 14mm";
+
+  const listMargin =
+    spacingDensity === "ultra-compact"
+      ? "0 0 2px 0"
+      : spacingDensity === "compact"
+      ? "1px 0 3px 0"
+      : "2px 0 6px 0";
+
+  const liMargin =
+    spacingDensity === "ultra-compact"
+      ? "0.5px"
+      : spacingDensity === "compact"
+      ? "1px"
+      : "2px";
+
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,7 +157,7 @@ export function exportResumeToPdf(
   <style>
     @page {
       size: A4 portrait;
-      margin: 12mm 14mm;
+      margin: ${pageMargin};
     }
     * {
       box-sizing: border-box;
@@ -106,11 +176,11 @@ export function exportResumeToPdf(
       text-decoration: none;
     }
     ul {
-      margin: 2px 0 6px 0;
-      padding-left: 16px;
+      margin: ${listMargin};
+      padding-left: ${spacingDensity === "ultra-compact" ? "13px" : "16px"};
     }
     li {
-      margin-bottom: 2px;
+      margin-bottom: ${liMargin};
     }
     .ats-keep-together {
       break-inside: avoid;
@@ -119,6 +189,9 @@ export function exportResumeToPdf(
     .ats-section-header {
       break-after: avoid;
       page-break-after: avoid;
+    }
+    .no-print {
+      display: none !important;
     }
   </style>
 </head>
@@ -149,10 +222,39 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
   fontSize,
   pageLimit = 1,
   sheetId = "ats-resume-sheet",
+  spacingDensity,
+  onPageCountChange,
 }) => {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [estimatedPages, setEstimatedPages] = useState<number>(1);
+
+  const density: SpacingDensity = spacingDensity || data.spacingDensity || "normal";
+  const densityStyles = DENSITY_CONFIG[density] || DENSITY_CONFIG.normal;
   const fontStack = FONT_STACK_MAP[fontFamily] || FONT_STACK_MAP.Calibri;
   const sizes = FONT_SIZE_CONFIG[fontSize] || FONT_SIZE_CONFIG.medium;
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      // 1 A4 page height at 96 CSS DPI: 297mm * 3.7795275591 ≈ 1122.52px
+      const a4PageHeightPx = 1122.52;
+      const height = el.scrollHeight || el.offsetHeight;
+      const paddingPx =
+        density === "ultra-compact" ? 53 : density === "compact" ? 75 : 98;
+      const totalHeightPx = height + paddingPx;
+      const count = Math.max(1, Number((totalHeightPx / a4PageHeightPx).toFixed(1)));
+      setEstimatedPages(count);
+      onPageCountChange?.(count);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [data, templateId, fontFamily, fontSize, density, onPageCountChange]);
 
   const sectionOrder: ResumeSectionKey[] =
     data.sectionOrder && data.sectionOrder.length > 0
@@ -176,6 +278,9 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
 
   // Template specific header & section styling (100% single-column ATS compliant)
   const renderSectionHeading = (title: string) => {
+    const marginTop = densityStyles.sectionMarginTop;
+    const marginBottom = densityStyles.sectionMarginBottom;
+
     if (templateId === "harvard") {
       return (
         <h2
@@ -187,8 +292,8 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             letterSpacing: "0.05em",
             borderBottom: "1px solid #000000",
             paddingBottom: "2px",
-            marginTop: "10px",
-            marginBottom: "6px",
+            marginTop,
+            marginBottom,
             color: "#000000",
           }}
         >
@@ -207,9 +312,9 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             textTransform: "uppercase",
             letterSpacing: "0.07em",
             borderBottom: "1.5px solid #1e293b",
-            paddingBottom: "3px",
-            marginTop: "11px",
-            marginBottom: "6px",
+            paddingBottom: "2.5px",
+            marginTop,
+            marginBottom,
             color: "#0f172a",
           }}
         >
@@ -229,8 +334,8 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
           letterSpacing: "0.04em",
           borderBottom: "1px solid #334155",
           paddingBottom: "2px",
-          marginTop: "9px",
-          marginBottom: "5px",
+          marginTop,
+          marginBottom,
           color: "#0f172a",
         }}
       >
@@ -250,7 +355,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             {renderSectionHeading("Professional Summary")}
             <p
               style={{
-                margin: "0 0 6px 0",
+                margin: `0 0 ${densityStyles.itemMarginBottom} 0`,
                 textAlign: "justify",
               }}
             >
@@ -268,7 +373,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
               <div
                 key={exp.id}
                 className="ats-keep-together"
-                style={{ marginBottom: "8px" }}
+                style={{ marginBottom: densityStyles.itemMarginBottom }}
               >
                 <div
                   style={{
@@ -295,7 +400,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
                     fontStyle: templateId === "harvard" ? "italic" : "normal",
                     fontWeight: templateId === "harvard" ? 600 : 700,
                     color: "#1e293b",
-                    marginBottom: "3px",
+                    marginBottom: "2px",
                   }}
                 >
                   <span>
@@ -323,13 +428,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
                 {exp.bullets && exp.bullets.length > 0 && (
                   <ul
                     style={{
-                      margin: "2px 0 3px 0",
+                      margin: densityStyles.listMargin,
                       paddingLeft: "16px",
                       listStyleType: "disc",
                     }}
                   >
                     {exp.bullets.map((b, i) => (
-                      <li key={i} style={{ marginBottom: "2px" }}>
+                      <li key={i} style={{ marginBottom: densityStyles.liMarginBottom }}>
                         {b}
                       </li>
                     ))}
@@ -363,7 +468,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
               <div
                 key={proj.id}
                 className="ats-keep-together"
-                style={{ marginBottom: "7px" }}
+                style={{ marginBottom: densityStyles.itemMarginBottom }}
               >
                 <div
                   style={{
@@ -405,13 +510,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
                 {proj.bullets && proj.bullets.length > 0 && (
                   <ul
                     style={{
-                      margin: "2px 0 2px 0",
+                      margin: densityStyles.listMargin,
                       paddingLeft: "16px",
                       listStyleType: "disc",
                     }}
                   >
                     {proj.bullets.map((b, i) => (
-                      <li key={i} style={{ marginBottom: "1.5px" }}>
+                      <li key={i} style={{ marginBottom: densityStyles.liMarginBottom }}>
                         {b}
                       </li>
                     ))}
@@ -427,7 +532,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
         return (
           <section key="skills" className="ats-keep-together">
             {renderSectionHeading("Technical & Core Skills")}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2.5px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               {data.skills.map((cat) => (
                 <div key={cat.id}>
                   <strong>{cat.category}:</strong> {cat.items.join(", ")}
@@ -446,7 +551,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
               <div
                 key={edu.id}
                 className="ats-keep-together"
-                style={{ marginBottom: "6px" }}
+                style={{ marginBottom: densityStyles.itemMarginBottom }}
               >
                 <div
                   style={{
@@ -482,13 +587,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
                 {edu.highlights && edu.highlights.length > 0 && (
                   <ul
                     style={{
-                      margin: "2px 0 2px 0",
+                      margin: densityStyles.listMargin,
                       paddingLeft: "16px",
                       listStyleType: "disc",
                     }}
                   >
                     {edu.highlights.map((h, i) => (
-                      <li key={i}>{h}</li>
+                      <li key={i} style={{ marginBottom: densityStyles.liMarginBottom }}>{h}</li>
                     ))}
                   </ul>
                 )}
@@ -505,13 +610,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             {renderSectionHeading("Certifications & Licenses")}
             <ul
               style={{
-                margin: "2px 0 4px 0",
+                margin: densityStyles.listMargin,
                 paddingLeft: "16px",
                 listStyleType: "disc",
               }}
             >
               {data.certifications.map((cert) => (
-                <li key={cert.id} style={{ marginBottom: "2px" }}>
+                <li key={cert.id} style={{ marginBottom: densityStyles.liMarginBottom }}>
                   <strong>{cert.name}</strong> — {cert.issuer} ({cert.issueDate}
                   {cert.credentialId ? `, ID: ${cert.credentialId}` : ""})
                 </li>
@@ -527,13 +632,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             {renderSectionHeading("Publications & Research")}
             <ul
               style={{
-                margin: "2px 0 4px 0",
+                margin: densityStyles.listMargin,
                 paddingLeft: "16px",
                 listStyleType: "disc",
               }}
             >
               {data.publications.map((pub) => (
-                <li key={pub.id} style={{ marginBottom: "2px" }}>
+                <li key={pub.id} style={{ marginBottom: densityStyles.liMarginBottom }}>
                   <strong>{pub.title}</strong> — <em>{pub.publisher}</em> (
                   {pub.date}). {pub.description || ""}
                 </li>
@@ -549,13 +654,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             {renderSectionHeading("Honors & Awards")}
             <ul
               style={{
-                margin: "2px 0 4px 0",
+                margin: densityStyles.listMargin,
                 paddingLeft: "16px",
                 listStyleType: "disc",
               }}
             >
               {data.awards.map((aw) => (
-                <li key={aw.id} style={{ marginBottom: "2px" }}>
+                <li key={aw.id} style={{ marginBottom: densityStyles.liMarginBottom }}>
                   <strong>{aw.title}</strong> — {aw.issuer} ({aw.date}):{" "}
                   {aw.description}
                 </li>
@@ -570,7 +675,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
           <section key="volunteer" className="ats-keep-together">
             {renderSectionHeading("Leadership & Volunteering")}
             {data.volunteer.map((vol) => (
-              <div key={vol.id} style={{ marginBottom: "5px" }}>
+              <div key={vol.id} style={{ marginBottom: densityStyles.itemMarginBottom }}>
                 <div
                   style={{
                     display: "flex",
@@ -588,13 +693,13 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
                 {vol.bullets && vol.bullets.length > 0 && (
                   <ul
                     style={{
-                      margin: "2px 0 2px 0",
+                      margin: densityStyles.listMargin,
                       paddingLeft: "16px",
                       listStyleType: "disc",
                     }}
                   >
                     {vol.bullets.map((b, i) => (
-                      <li key={i}>{b}</li>
+                      <li key={i} style={{ marginBottom: densityStyles.liMarginBottom }}>{b}</li>
                     ))}
                   </ul>
                 )}
@@ -616,105 +721,31 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
       style={{
         fontFamily: fontStack,
         fontSize: sizes.base,
-        lineHeight: sizes.lineHeight,
+        lineHeight: densityStyles.lineHeight,
         width: "210mm",
-        minHeight: pageLimit === 2 ? "594mm" : "297mm",
-        padding: "13mm 15mm",
+        minHeight: `${Math.max(pageLimit, Math.ceil(estimatedPages || 1)) * 297}mm`,
+        padding: densityStyles.padding,
         color: "#000000",
         backgroundColor: "#ffffff",
         position: "relative",
       }}
     >
-      {/* Top Personal Header */}
-      {templateId === "harvard" && (
-        <header
-          style={{
-            textAlign: "center",
-            marginBottom: "8px",
-          }}
-        >
-          <h1
+      <div ref={contentRef} className="ats-resume-inner-content">
+        {/* Top Personal Header */}
+        {templateId === "harvard" && (
+          <header
             style={{
-              fontSize: sizes.name,
-              fontWeight: 700,
-              margin: "0 0 2px 0",
-              letterSpacing: "0.02em",
-              textTransform: "uppercase",
+              textAlign: "center",
+              marginBottom: densityStyles.headerMarginBottom,
             }}
           >
-            {personalInfo.fullName || "Your Name"}
-          </h1>
-          {personalInfo.headline && (
-            <div
-              style={{
-                fontSize: sizes.headline,
-                fontWeight: 600,
-                color: "#1e293b",
-                marginBottom: "3px",
-              }}
-            >
-              {personalInfo.headline}
-            </div>
-          )}
-          <div style={{ fontSize: sizes.meta, color: "#111827" }}>
-            {contactParts.join("  •  ")}
-          </div>
-        </header>
-      )}
-
-      {templateId === "modern" && (
-        <header
-          style={{
-            borderBottom: "2px solid #0f172a",
-            paddingBottom: "7px",
-            marginBottom: "8px",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: sizes.name,
-              fontWeight: 800,
-              margin: "0 0 2px 0",
-              color: "#0f172a",
-            }}
-          >
-            {personalInfo.fullName || "Your Name"}
-          </h1>
-          {personalInfo.headline && (
-            <div
-              style={{
-                fontSize: sizes.headline,
-                fontWeight: 600,
-                color: "#334155",
-                marginBottom: "4px",
-              }}
-            >
-              {personalInfo.headline}
-            </div>
-          )}
-          <div style={{ fontSize: sizes.meta, color: "#1e293b" }}>
-            {contactParts.join("  |  ")}
-          </div>
-        </header>
-      )}
-
-      {templateId === "tech" && (
-        <header
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            borderBottom: "1.5px solid #000000",
-            paddingBottom: "6px",
-            marginBottom: "8px",
-          }}
-        >
-          <div>
             <h1
               style={{
                 fontSize: sizes.name,
                 fontWeight: 700,
-                margin: 0,
+                margin: "0 0 2px 0",
+                letterSpacing: "0.02em",
+                textTransform: "uppercase",
               }}
             >
               {personalInfo.fullName || "Your Name"}
@@ -725,42 +756,118 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
                   fontSize: sizes.headline,
                   fontWeight: 600,
                   color: "#1e293b",
+                  marginBottom: "3px",
                 }}
               >
                 {personalInfo.headline}
               </div>
             )}
-          </div>
-          <div
+            <div style={{ fontSize: sizes.meta, color: "#111827" }}>
+              {contactParts.join("  •  ")}
+            </div>
+          </header>
+        )}
+
+        {templateId === "modern" && (
+          <header
             style={{
-              textAlign: "right",
-              fontSize: sizes.meta,
-              maxWidth: "55%",
-              lineHeight: "1.35",
+              borderBottom: "2px solid #0f172a",
+              paddingBottom: "6px",
+              marginBottom: densityStyles.headerMarginBottom,
+            }}
+          >
+            <h1
+              style={{
+                fontSize: sizes.name,
+                fontWeight: 800,
+                margin: "0 0 2px 0",
+                color: "#0f172a",
+              }}
+            >
+              {personalInfo.fullName || "Your Name"}
+            </h1>
+            {personalInfo.headline && (
+              <div
+                style={{
+                  fontSize: sizes.headline,
+                  fontWeight: 600,
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                {personalInfo.headline}
+              </div>
+            )}
+            <div style={{ fontSize: sizes.meta, color: "#1e293b" }}>
+              {contactParts.join("  |  ")}
+            </div>
+          </header>
+        )}
+
+        {templateId === "tech" && (
+          <header
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+              borderBottom: "1.5px solid #000000",
+              paddingBottom: "5px",
+              marginBottom: densityStyles.headerMarginBottom,
             }}
           >
             <div>
-              {[personalInfo.email, personalInfo.phone, personalInfo.location]
-                .filter(Boolean)
-                .join(" | ")}
+              <h1
+                style={{
+                  fontSize: sizes.name,
+                  fontWeight: 700,
+                  margin: 0,
+                }}
+              >
+                {personalInfo.fullName || "Your Name"}
+              </h1>
+              {personalInfo.headline && (
+                <div
+                  style={{
+                    fontSize: sizes.headline,
+                    fontWeight: 600,
+                    color: "#1e293b",
+                  }}
+                >
+                  {personalInfo.headline}
+                </div>
+              )}
             </div>
-            <div>
-              {[
-                personalInfo.linkedin,
-                personalInfo.github,
-                personalInfo.portfolio,
-              ]
-                .filter(Boolean)
-                .join(" | ")}
+            <div
+              style={{
+                textAlign: "right",
+                fontSize: sizes.meta,
+                maxWidth: "55%",
+                lineHeight: "1.3",
+              }}
+            >
+              <div>
+                {[personalInfo.email, personalInfo.phone, personalInfo.location]
+                  .filter(Boolean)
+                  .join(" | ")}
+              </div>
+              <div>
+                {[
+                  personalInfo.linkedin,
+                  personalInfo.github,
+                  personalInfo.portfolio,
+                ]
+                  .filter(Boolean)
+                  .join(" | ")}
+              </div>
             </div>
-          </div>
-        </header>
-      )}
+          </header>
+        )}
 
-      {/* Render Ordered Sections */}
-      <div>{sectionOrder.map((sectionKey) => renderSection(sectionKey))}</div>
+        {/* Render Ordered Sections */}
+        <div>{sectionOrder.map((sectionKey) => renderSection(sectionKey))}</div>
+      </div>
 
-      {/* Visual Page Boundary Guide (Hidden in PDF Print) */}
+      {/* Visual Page Boundary Guides (Hidden in PDF Print) */}
       <div
         className="no-print pointer-events-none"
         style={{
@@ -769,7 +876,7 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
           left: 0,
           right: 0,
           borderTop: "1px dashed #ef4444",
-          opacity: 0.5,
+          opacity: 0.6,
         }}
       >
         <span
@@ -778,16 +885,80 @@ export const AtsResumePreview: React.FC<AtsResumePreviewProps> = ({
             right: "8px",
             top: "-18px",
             fontSize: "10px",
+            fontWeight: 600,
             color: "#dc2626",
             background: "#fee2e2",
-            padding: "1px 6px",
+            padding: "1px 7px",
             borderRadius: "4px",
             fontFamily: "sans-serif",
           }}
         >
-          End of Page 1 (A4 Boundary)
+          End of Page 1 (297mm A4)
         </span>
       </div>
+
+      <div
+        className="no-print pointer-events-none"
+        style={{
+          position: "absolute",
+          top: "594mm",
+          left: 0,
+          right: 0,
+          borderTop: estimatedPages > 2.0 ? "2px dashed #dc2626" : "1px dashed #f59e0b",
+          opacity: 0.85,
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            right: "8px",
+            top: "-18px",
+            fontSize: "10px",
+            fontWeight: 700,
+            color: estimatedPages > 2.0 ? "#991b1b" : "#b45309",
+            background: estimatedPages > 2.0 ? "#fecaca" : "#fef3c7",
+            padding: "1px 7px",
+            borderRadius: "4px",
+            fontFamily: "sans-serif",
+            border: estimatedPages > 2.0 ? "1px solid #f87171" : "1px solid #fcd34d",
+          }}
+        >
+          {estimatedPages > 2.0
+            ? "⚠️ BATAS MAKSIMAL 2 HALAMAN — KONTEN TUMPAH KE HALAMAN 3!"
+            : "End of Page 2 (Batas Maksimal 2 Halaman ATS)"}
+        </span>
+      </div>
+
+      {estimatedPages > 2.0 && (
+        <div
+          className="no-print pointer-events-none"
+          style={{
+            position: "absolute",
+            top: "891mm",
+            left: 0,
+            right: 0,
+            borderTop: "1px dashed #ef4444",
+            opacity: 0.6,
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              right: "8px",
+              top: "-18px",
+              fontSize: "10px",
+              fontWeight: 600,
+              color: "#dc2626",
+              background: "#fee2e2",
+              padding: "1px 7px",
+              borderRadius: "4px",
+              fontFamily: "sans-serif",
+            }}
+          >
+            End of Page 3 (Danger Zone — Pangkas ke 2 Halaman)
+          </span>
+        </div>
+      )}
     </div>
   );
 };
